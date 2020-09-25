@@ -6,8 +6,6 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
-import static org.firstinspires.ftc.teamcode.Odometry.mathFunctions.interpretAngle;
-
 @Disabled
 @TeleOp(name = "Odometry feed")
 public class OdometryFeed extends LinearOpMode {
@@ -44,7 +42,7 @@ public class OdometryFeed extends LinearOpMode {
             //Display Global (x, y, theta) coordinates
             telemetry.addData("X Position", globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH);
             telemetry.addData("Y Position", -globalPositionUpdate.returnYCoordinate() / COUNTS_PER_INCH);
-            telemetry.addData("Orientation (Degrees)", interpretAngle(globalPositionUpdate.returnOrientation()));
+            telemetry.addData("Orientation (Degrees)", mathFunctions.interpretAngle(globalPositionUpdate.returnOrientation()));
             telemetry.addData("Unchanged Orientation", globalPositionUpdate.returnOrientation());
             telemetry.addData("Vertical left encoder position", verticalLeft.getCurrentPosition());
             telemetry.addData("Vertical right encoder position", verticalRight.getCurrentPosition());

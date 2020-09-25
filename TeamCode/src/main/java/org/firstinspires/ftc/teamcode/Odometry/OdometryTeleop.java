@@ -1,17 +1,10 @@
 package org.firstinspires.ftc.teamcode.Odometry;
 
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.Range;
-
-import static com.qualcomm.robotcore.util.Range.clip;
-import static java.lang.Math.abs;
-import static java.lang.Math.toDegrees;
-import static java.lang.Math.toRadians;
-import static org.firstinspires.ftc.teamcode.Odometry.mathFunctions.interpretAngle;
 
 @TeleOp(name="Odometry Teleop")
 public class OdometryTeleop extends LinearOpMode {
@@ -92,7 +85,7 @@ public class OdometryTeleop extends LinearOpMode {
 
             telemetry.addData("X Position", globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH);
             telemetry.addData("Y Position", -globalPositionUpdate.returnYCoordinate() / COUNTS_PER_INCH);
-            telemetry.addData("Orientation (Degrees)", interpretAngle(globalPositionUpdate.returnOrientation()));
+            telemetry.addData("Orientation (Degrees)", mathFunctions.interpretAngle(globalPositionUpdate.returnOrientation()));
             telemetry.update();
         }
 

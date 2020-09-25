@@ -7,7 +7,6 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import static com.qualcomm.robotcore.util.Range.*;
 import static java.lang.Math.*;
-import static org.firstinspires.ftc.teamcode.Odometry.mathFunctions.interpretAngle;
 
 @Autonomous(name="Robot Movement")
 public class RobotMovement extends LinearOpMode {
@@ -109,11 +108,6 @@ public class RobotMovement extends LinearOpMode {
             telemetry.addData(" orientation", toDegrees(robotOrientation)+90);
             telemetry.update();
 
-            //Testing values
-            //movement_x = 0;
-            //movement_y = 0;
-            //movement_turn = 0;
-
             double leftFront = -movement_y - movement_x + movement_turn;
             double rightFront = movement_y - movement_x + movement_turn;
             double rightBack = movement_y + movement_x + movement_turn;
@@ -191,26 +185,12 @@ public class RobotMovement extends LinearOpMode {
             double movement_x = movementXPower * movementSpeed;
             double movement_y = movementYPower * movementSpeed;
 
-            double relativeTurnAngle = relativeAngleToTarget - toRadians(90) + toRadians(preferredAngle);
-
-            //Lots of Telemetry. Remove some of this.
-
-            //telemetry.addData( " x" , movement_x);
-            //telemetry.addData(" y", movement_y);
-            //telemetry.addData(" theta", movement_turn);
-            //telemetry.addData( " Distance to Target", distanceToTarget);
-            //telemetry.addData( " Absolute Angle to Target", Math.toDegrees(absoluteAngleToTarget));
-            //telemetry.addData( " Relative to Target", Math.toDegrees(relativeAngleToTarget));
-            //telemetry.addData( " Relative Turn Angle", Math.toDegrees(relativeTurnAngle));
             telemetry.addData(" xpos", robotX);
             telemetry.addData("X Position", globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH);
             telemetry.addData(" ypos", robotY);
             telemetry.addData(" orientation", toDegrees(robotOrientation)+90);
             telemetry.update();
 
-            //Testing values
-            //movement_x = 0;
-            //movement_y = 0;
             double movement_turn = 0;
 
             double leftFront = -movement_y - movement_x + movement_turn;
@@ -391,5 +371,26 @@ public class RobotMovement extends LinearOpMode {
         right_back.setPower(0);
         left_front.setPower(0);
         left_back.setPower(0);
+    }
+
+    public double interpretAngle(double Orientation) {
+        if(isWithin(Orientation, -180, 0)) {
+            return Orientation;
+        } else if (isWithin(Orientation, -360, -180)) {
+            double newOrientation = (Orientation +360);
+            return newOrientation;
+        } else {
+            return Orientation;
+        }
+    }
+
+    public boolean isWithin(double value, double min, double max) {
+        if(value >= max) {
+            return false;
+        } else if (value <= min) {
+            return false;
+        } else {
+            return true;
+        }
     }
 }
