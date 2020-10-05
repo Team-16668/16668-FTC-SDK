@@ -57,27 +57,6 @@ public class practiceTeleOp extends LinearOpMode {
             telemetry.addData(" lb", BackLeft);
             telemetry.update();
 
-            /*
-
-            if(gamepad1.left_bumper) {
-                FrontRight *= 0.25;
-                FrontLeft *= 0.25;
-                BackLeft *= 0.25;
-                BackRight *= 0.25;
-            } else if(gamepad1.right_bumper) {
-                FrontRight *= 0.55;
-                FrontLeft *= 0.55;
-                BackLeft *= 0.55;
-                BackRight *= 0.55;
-            }  else{
-                FrontRight *= 0.35;
-                FrontLeft *= 0.35;
-                BackLeft *= 0.35;
-                BackRight *= 0.35;
-            }
-
-             */
-
             if(gamepad1.left_bumper) {
                 FrontRight *= 0.25;
                 FrontLeft *= 0.25;
