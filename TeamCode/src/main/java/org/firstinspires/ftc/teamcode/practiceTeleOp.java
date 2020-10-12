@@ -26,10 +26,10 @@ public class practiceTeleOp extends LinearOpMode {
         left_front.setDirection(DcMotorSimple.Direction.REVERSE);
         left_back.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        right_front.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        right_back.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        left_front.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        left_back.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        right_front.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        right_back.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        left_front.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        left_back.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         waitForStart();
         while(opModeIsActive()) {
