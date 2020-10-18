@@ -9,31 +9,26 @@ import java.util.concurrent.TimeUnit;
 
 @TeleOp(name="Closed Loop Control Test")
 public class closedLoopControl extends LinearOpMode {
-    public DcMotor right_front;
-    public DcMotor right_back;
+    public DcMotor test;
 
     public void runOpMode() throws InterruptedException {
         double targetRPM = 6000;
         int totalRevolutions;
         double runTime = 0;
-        double currentPower = 0.15;
+        double currentPower = 1;
 
-        right_front = hardwareMap.dcMotor.get("right_front");
-        right_back = hardwareMap.dcMotor.get("right_back");
+        test = hardwareMap.dcMotor.get("test");
 
-        right_front.setDirection(DcMotorSimple.Direction.REVERSE);
-        right_front.setDirection(DcMotorSimple.Direction.REVERSE);
+        test.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        right_front.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        test.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        right_front.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        right_back.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        test.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        right_front.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        right_back.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        test.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         waitForStart();
-        right_front.setPower(currentPower);
+        test.setPower(currentPower);
         totalRevolutions = 0;
 
         double startTime = System.nanoTime();
@@ -44,7 +39,7 @@ public class closedLoopControl extends LinearOpMode {
             getRuntime();
 
             telemetry.addData("Power", currentPower);
-            telemetry.addData("Encoder Position", right_back.getCurrentPosition());
+            telemetry.addData("Encoder Position", test.getCurrentPosition());
             telemetry.addData("Total Revolutions", totalRevolutions);
             telemetry.addData("Runtime (Nano)", runTime);
             telemetry.addData("Runtime (Sec)", runTime / TimeUnit.SECONDS.toNanos(1));
