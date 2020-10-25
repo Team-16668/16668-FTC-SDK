@@ -18,8 +18,8 @@ import org.openftc.easyopencv.OpenCvPipeline;
 import org.openftc.easyopencv.OpenCvWebcam;
 
 @TeleOp
-public class EasyOpenCVExample extends LinearOpMode
-{
+public class OpenCVWebcam extends LinearOpMode {
+
     OpenCvWebcam webCamBlue;
     SkystoneDeterminationPipeline pipeline;
 
@@ -50,9 +50,21 @@ public class EasyOpenCVExample extends LinearOpMode
             telemetry.addData("Position", pipeline.position);
             telemetry.update();
 
+            if(pipeline.position == SkystoneDeterminationPipeline.RingPosition.NONE) {
+                //Zero Rings
+                webCamBlue.stopStreaming();
+            } else if(pipeline.position == SkystoneDeterminationPipeline.RingPosition.ONE) {
+                //One Ring
+                webCamBlue.stopStreaming();
+            } else if(pipeline.position == SkystoneDeterminationPipeline.RingPosition.FOUR) {
+                //Four Rings
+                webCamBlue.stopStreaming();
+            }
+
             // Don't burn CPU cycles busy-looping in this sample
             sleep(50);
         }
+
     }
 
     public static class SkystoneDeterminationPipeline extends OpenCvPipeline
