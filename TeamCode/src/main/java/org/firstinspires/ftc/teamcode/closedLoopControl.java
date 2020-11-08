@@ -12,10 +12,10 @@ public class closedLoopControl extends LinearOpMode {
     public DcMotor test;
 
     public void runOpMode() throws InterruptedException {
-        double targetRPM = 6000;
-        int totalRevolutions;
+        double targetRPM = 3750;
+        double totalRevolutions;
         double runTime = 0;
-        double currentPower = 1;
+        double currentPower = 0.85;
 
         test = hardwareMap.dcMotor.get("test");
 
@@ -29,20 +29,45 @@ public class closedLoopControl extends LinearOpMode {
 
         waitForStart();
         test.setPower(currentPower);
-        totalRevolutions = 0;
 
         double startTime = System.nanoTime();
+        double lastTime = 0;
+        double lastRevolutions = 0;
+        double RPM = 0;
+        double revolutionChange, timeChange;
         while(opModeIsActive()) {
+            double encoderPosition = test.getCurrentPosition();
+            totalRevolutions = encoderPosition / 28;
+            runTime = (System.nanoTime() - startTime) / TimeUnit.SECONDS.toNanos(1);
 
-            runTime = System.nanoTime() - startTime;
+            if(runTime - lastTime > 0.05) {
 
-            getRuntime();
+                //Get RPM
+
+                revolutionChange = totalRevolutions - lastRevolutions;
+                timeChange = runTime - lastTime;
+                RPM = (revolutionChange / timeChange) * 60;
+                lastRevolutions = totalRevolutions;
+
+                lastTime += 0.05;
+
+                if(RPM < targetRPM) {
+                    currentPower += 0.001;
+                } else if(RPM > targetRPM) {
+                    currentPower -= 0.001;
+                }
+
+                if(currentPower > 1) {
+                    currentPower = 1;
+                }
+            }
+
+            test.setPower(currentPower);
 
             telemetry.addData("Power", currentPower);
-            telemetry.addData("Encoder Position", test.getCurrentPosition());
-            telemetry.addData("Total Revolutions", totalRevolutions);
-            telemetry.addData("Runtime (Nano)", runTime);
-            telemetry.addData("Runtime (Sec)", runTime / TimeUnit.SECONDS.toNanos(1));
+            telemetry.addData("Revolutions", totalRevolutions);
+            telemetry.addData("Runtime (Sec)", runTime);
+            telemetry.addData("RPM", RPM);
             telemetry.update();
 
         }
