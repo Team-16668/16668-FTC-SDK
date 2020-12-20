@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import java.util.concurrent.TimeUnit;
 
 @TeleOp(name="Closed Loop Control Test")
+
 public class closedLoopControl extends LinearOpMode {
     public DcMotor test;
 
@@ -47,8 +48,8 @@ public class closedLoopControl extends LinearOpMode {
                 revolutionChange = totalRevolutions - lastRevolutions;
                 timeChange = runTime - lastTime;
                 RPM = (revolutionChange / timeChange) * 60;
-                lastRevolutions = totalRevolutions;
 
+                lastRevolutions = totalRevolutions;
                 lastTime += 0.05;
 
                 if(RPM < targetRPM) {
@@ -59,6 +60,8 @@ public class closedLoopControl extends LinearOpMode {
 
                 if(currentPower > 1) {
                     currentPower = 1;
+                } else if(currentPower < 0 ) {
+                    currentPower = 0;
                 }
             }
 
@@ -72,5 +75,4 @@ public class closedLoopControl extends LinearOpMode {
 
         }
     }
-
 }
