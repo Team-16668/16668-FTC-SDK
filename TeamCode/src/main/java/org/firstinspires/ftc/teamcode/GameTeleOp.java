@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 @TeleOp(name="Game TeleOp")
 public class GameTeleOp extends LinearOpMode {
     DcMotor right_front, right_back, left_front, left_back, shooter, intake;
-    Servo claw, wobbleArm, backPlateLeft, backPlateRight;
+    Servo claw, wobbleArm, backPlate, flicker;
 
     //Global Game State Variable
     GameState state = GameState.Intake;
@@ -30,12 +30,16 @@ public class GameTeleOp extends LinearOpMode {
     boolean gameCurrentButtonState = false;
 
     //Logic for Reversing Intake Direction
-    Direction direction = Direction.In;
+    IntakeDirection intakeDirection = IntakeDirection.In;
     boolean intakePrevButtonState = false;
     boolean intakeCurrentButtonState = false;
 
+    //Logic for the Flicker
+    double flickerStartTime;
+    double timeSinceFlicker;
+
     //Logic for Shooter
-    double startTime;
+    double shooterStartTime;
     double shooterLastTime = 0;
     double shooterLastRevolutions = 0;
     double shooterRPM = 0;
@@ -53,15 +57,17 @@ public class GameTeleOp extends LinearOpMode {
 
         SetMotorDirectionAndMode();
 
-        claw.setPosition(1);
-        wobbleArm.setPosition(1);
+        //claw.setPosition(1);
+        //wobbleArm.setPosition(1);
 
-        backPlateLeft.setPosition(0);
-        backPlateRight.setPosition(1);
+        backPlate.setPosition(1);
+        flicker.setPosition(1);
 
         waitForStart();
 
-        startTime = System.nanoTime();
+        shooterStartTime = System.nanoTime();
+
+        SwitchToIntake();
 
         while(opModeIsActive()) {
 
@@ -88,22 +94,23 @@ public class GameTeleOp extends LinearOpMode {
         intakeCurrentButtonState = gamepad2.b;
 
         if(intakeCurrentButtonState != intakePrevButtonState && intakeCurrentButtonState) {
-            if (direction == Direction.In) {
-                intake.setPower(1);
-            } else if (direction == Direction.Out) {
+            if (intakeDirection == IntakeDirection.In) {
                 intake.setPower(-1);
+                intakeDirection = IntakeDirection.Out;
+            } else if (intakeDirection == IntakeDirection.Out) {
+                intake.setPower(1);
+                intakeDirection = IntakeDirection.In;
             }
         }
-        gamePrevButtonState = gameCurrentButtonState;
+        intakePrevButtonState = intakeCurrentButtonState;
     }
 
     void Shooting() {
         double encoderPosition = shooter.getCurrentPosition();
         shooterTotalRevolutions = encoderPosition / 28;
-        shooterRunTime = (System.nanoTime() - startTime) / TimeUnit.SECONDS.toNanos(1);
+        shooterRunTime = (System.nanoTime() - shooterStartTime) / TimeUnit.SECONDS.toNanos(1);
 
         if(shooterRunTime - shooterLastTime > 0.05) {
-
             //Get RPM
 
             shooterRevolutionChange = shooterTotalRevolutions - shooterLastRevolutions;
@@ -124,13 +131,39 @@ public class GameTeleOp extends LinearOpMode {
             } else if(shooterCurrentPower < 0 ) {
                 shooterCurrentPower = 0;
             }
+
+            shooter.setPower(shooterCurrentPower);
         }
+
+        /*
+        //Logic for Flicking the Rings
+        if(gamepad2.right_bumper) {
+            flicker.setPosition(1);
+        } else if (gamepad2.left_bumper) {
+            flicker.setPosition(0);
+        }
+         */
+
+        Flick();
 
         shooter.setPower(shooterCurrentPower);
 
         telemetry.addData("Power", shooterCurrentPower);
         telemetry.addData("Revolutions", shooterTotalRevolutions);
         telemetry.addData("RPM", shooterRPM);
+    }
+
+    void Flick() {
+        timeSinceFlicker = (System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1);
+
+        if(timeSinceFlicker >= 0.5) {
+            flicker.setPosition(0);
+        } else if (timeSinceFlicker >= 1) {
+            if(gamepad2.right_bumper || gamepad2.left_bumper) {
+                flicker.setPosition(1);
+                flickerStartTime = System.nanoTime();
+            }
+        }
     }
 
     void ChangeGameStateSubroutine() {
@@ -147,27 +180,28 @@ public class GameTeleOp extends LinearOpMode {
     }
 
     void SwitchToIntake() {
-        backPlateLeft.setPosition(0);
-        backPlateRight.setPosition(1);
+        backPlate.setPosition(1);
 
         state = GameState.Intake;
 
+        intakeDirection = IntakeDirection.In;
+
         shooter.setPower(0);
+        intake.setPower(1);
 
         telemetry.addData("State", "Intake");
     }
 
     void SwitchToShooting() {
-        backPlateLeft.setPosition(1);
-        backPlateRight.setPosition(0);
+        backPlate.setPosition(0);
 
         state = GameState.Shooting;
 
         intake.setPower(0);
 
-        startTime = System.nanoTime();
+        shooterStartTime = System.nanoTime();
 
-        telemetry.addData("State", "Shooting");
+        flickerStartTime = System.nanoTime();
     }
 
     void WobbleSubroutine() {
@@ -195,7 +229,7 @@ public class GameTeleOp extends LinearOpMode {
             switchClaw = false;
         }
 
-        claw.setPosition(clawPos);
+        //claw.setPosition(clawPos);
     }
 
     void CheckWobbleArm() {
@@ -217,7 +251,7 @@ public class GameTeleOp extends LinearOpMode {
             switchArm = false;
         }
 
-        wobbleArm.setPosition(armPos);
+        //wobbleArm.setPosition(armPos);
     }
 
     private void DefineHardwareMap() {
@@ -234,10 +268,10 @@ public class GameTeleOp extends LinearOpMode {
         intake = hardwareMap.dcMotor.get("intake");
 
         //For the Wobble Goal
-        claw = hardwareMap.servo.get("claw");
-        wobbleArm = hardwareMap.servo.get("wobble_arm");
-        backPlateLeft = hardwareMap.servo.get("backplate_left");
-        backPlateRight = hardwareMap.servo.get("backplate_right");
+        //claw = hardwareMap.servo.get("claw");
+        //wobbleArm = hardwareMap.servo.get("wobble_arm");
+        backPlate = hardwareMap.servo.get("backplate");
+        flicker = hardwareMap.servo.get("flicker");
     }
 
     private void SetMotorDirectionAndMode() {
@@ -245,6 +279,8 @@ public class GameTeleOp extends LinearOpMode {
         right_back.setDirection(DcMotorSimple.Direction.REVERSE);
         left_front.setDirection(DcMotorSimple.Direction.REVERSE);
         left_back.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        shooter.setDirection(DcMotorSimple.Direction.REVERSE);
 
         right_front.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         right_back.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -297,8 +333,13 @@ public class GameTeleOp extends LinearOpMode {
         Intake
     }
 
-    private enum Direction {
+    private enum IntakeDirection {
         In,
         Out,
+    }
+
+    private enum FlickState {
+        Flicked,
+        Unflicked
     }
 }
