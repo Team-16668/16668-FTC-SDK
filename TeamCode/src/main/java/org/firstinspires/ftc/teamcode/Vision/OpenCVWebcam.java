@@ -13,14 +13,13 @@ import org.opencv.imgproc.Imgproc;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
-import org.openftc.easyopencv.OpenCvInternalCamera;
 import org.openftc.easyopencv.OpenCvPipeline;
 import org.openftc.easyopencv.OpenCvWebcam;
 
 @TeleOp
 public class OpenCVWebcam extends LinearOpMode {
 
-    OpenCvWebcam webCamBlue;
+    OpenCvWebcam webcam;
     SkystoneDeterminationPipeline pipeline;
 
     @Override
@@ -28,17 +27,17 @@ public class OpenCVWebcam extends LinearOpMode {
     {
 
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
-        webCamBlue = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "blue_webcam"), cameraMonitorViewId);
+        webcam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "webcam"), cameraMonitorViewId);
         pipeline = new SkystoneDeterminationPipeline();
 
-        webCamBlue.setPipeline(pipeline);
+        webcam.setPipeline(pipeline);
 
-        webCamBlue.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener()
+        webcam.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener()
         {
             @Override
             public void onOpened()
             {
-                webCamBlue.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);
+                webcam.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);
             }
         });
 
@@ -52,13 +51,13 @@ public class OpenCVWebcam extends LinearOpMode {
 
             if(pipeline.position == SkystoneDeterminationPipeline.RingPosition.NONE) {
                 //Zero Rings
-                webCamBlue.stopStreaming();
+                webcam.stopStreaming();
             } else if(pipeline.position == SkystoneDeterminationPipeline.RingPosition.ONE) {
                 //One Ring
-                webCamBlue.stopStreaming();
+                webcam.stopStreaming();
             } else if(pipeline.position == SkystoneDeterminationPipeline.RingPosition.FOUR) {
                 //Four Rings
-                webCamBlue.stopStreaming();
+                webcam.stopStreaming();
             }
 
             // Don't burn CPU cycles busy-looping in this sample
