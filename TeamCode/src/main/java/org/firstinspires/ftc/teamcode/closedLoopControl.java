@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 @TeleOp(name="Closed Loop Control Test")
 
 public class closedLoopControl extends LinearOpMode {
-    public DcMotor test;
+    public DcMotor shooter;
 
     public void runOpMode() throws InterruptedException {
         double targetRPM = 3750;
@@ -18,18 +18,18 @@ public class closedLoopControl extends LinearOpMode {
         double runTime = 0;
         double currentPower = 0.85;
 
-        test = hardwareMap.dcMotor.get("test");
+        shooter = hardwareMap.dcMotor.get("shooter");
 
-        test.setDirection(DcMotorSimple.Direction.REVERSE);
+        shooter.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        test.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        shooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        test.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        shooter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        test.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        shooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         waitForStart();
-        test.setPower(currentPower);
+        shooter.setPower(currentPower);
 
         double startTime = System.nanoTime();
         double lastTime = 0;
@@ -37,7 +37,7 @@ public class closedLoopControl extends LinearOpMode {
         double RPM = 0;
         double revolutionChange, timeChange;
         while(opModeIsActive()) {
-            double encoderPosition = test.getCurrentPosition();
+            double encoderPosition = shooter.getCurrentPosition();
             totalRevolutions = encoderPosition / 28;
             runTime = (System.nanoTime() - startTime) / TimeUnit.SECONDS.toNanos(1);
 
@@ -65,7 +65,7 @@ public class closedLoopControl extends LinearOpMode {
                 }
             }
 
-            test.setPower(currentPower);
+            shooter.setPower(currentPower);
 
             telemetry.addData("Power", currentPower);
             telemetry.addData("Revolutions", totalRevolutions);

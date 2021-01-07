@@ -37,6 +37,8 @@ public class GameTeleOp extends LinearOpMode {
     //Logic for the Flicker
     double flickerStartTime;
     double timeSinceFlicker;
+    boolean firstReturn = true;
+    boolean tryFLick = false;
 
     //Logic for Shooter
     double shooterStartTime;
@@ -45,10 +47,12 @@ public class GameTeleOp extends LinearOpMode {
     double shooterRPM = 0;
     double shooterRevolutionChange, shooterTimeChange;
 
-    double shooterTargetRPM = 3750;
+    double shooterTargetRPM = 3900;
     double shooterTotalRevolutions;
     double shooterRunTime = 0;
-    double shooterCurrentPower = 0.85;
+    double shooterStartPower = .85;
+    double shooterCurrentPower = shooterStartPower;
+
 
 
     public void runOpMode() throws InterruptedException {
@@ -66,6 +70,7 @@ public class GameTeleOp extends LinearOpMode {
         waitForStart();
 
         shooterStartTime = System.nanoTime();
+        flickerStartTime = System.nanoTime();
 
         SwitchToIntake();
 
@@ -86,12 +91,14 @@ public class GameTeleOp extends LinearOpMode {
                 Intake();
             }
 
+            Flick();
+
             telemetry.update();
         }
     }
 
     void Intake() {
-        intakeCurrentButtonState = gamepad2.b;
+        intakeCurrentButtonState = gamepad1.b;
 
         if(intakeCurrentButtonState != intakePrevButtonState && intakeCurrentButtonState) {
             if (intakeDirection == IntakeDirection.In) {
@@ -137,37 +144,45 @@ public class GameTeleOp extends LinearOpMode {
 
         /*
         //Logic for Flicking the Rings
-        if(gamepad2.right_bumper) {
+        if(gamepad1.right_bumper) {
             flicker.setPosition(1);
-        } else if (gamepad2.left_bumper) {
+        } else if (gamepad1.left_bumper) {
             flicker.setPosition(0);
         }
          */
-
-        Flick();
-
         shooter.setPower(shooterCurrentPower);
 
+        /*
         telemetry.addData("Power", shooterCurrentPower);
         telemetry.addData("Revolutions", shooterTotalRevolutions);
         telemetry.addData("RPM", shooterRPM);
+
+         */
     }
 
     void Flick() {
         timeSinceFlicker = (System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1);
-
+        telemetry.addData("time since flick", timeSinceFlicker);
+        //telemetry.update();
         if(timeSinceFlicker >= 0.5) {
-            flicker.setPosition(0);
-        } else if (timeSinceFlicker >= 1) {
-            if(gamepad2.right_bumper || gamepad2.left_bumper) {
+            if(firstReturn) {
                 flicker.setPosition(1);
-                flickerStartTime = System.nanoTime();
+                firstReturn = false;
             }
+        }
+        tryFLick = gamepad1.dpad_up || gamepad1.dpad_down ;
+        if (timeSinceFlicker >= 1 && tryFLick) {
+            telemetry.addData("running", "check for flicker button");
+            telemetry.update();
+            flicker.setPosition(0);
+            flickerStartTime = System.nanoTime();
+            firstReturn = true;
         }
     }
 
+
     void ChangeGameStateSubroutine() {
-        gameCurrentButtonState = gamepad2.a;
+        gameCurrentButtonState = gamepad1.a;
 
         if(gameCurrentButtonState != gamePrevButtonState && gameCurrentButtonState) {
             if (state == GameState.Intake) {
@@ -199,9 +214,9 @@ public class GameTeleOp extends LinearOpMode {
 
         intake.setPower(0);
 
-        shooterStartTime = System.nanoTime();
+        shooterCurrentPower = shooterStartPower;
 
-        flickerStartTime = System.nanoTime();
+        shooterStartTime = System.nanoTime();
     }
 
     void WobbleSubroutine() {
@@ -315,6 +330,11 @@ public class GameTeleOp extends LinearOpMode {
             BackLeft *= 0.25;
             BackRight *= 0.25;
         } else if(gamepad1.right_bumper) {
+            FrontRight *= 0.75;
+            FrontLeft *= 0.75;
+            BackLeft *= 0.75;
+            BackRight *= 0.75;
+        } else {
             FrontRight *= 0.55;
             FrontLeft *= 0.55;
             BackLeft *= 0.55;
