@@ -107,10 +107,24 @@ public class RobotMovement extends LinearOpMode {
                 movement_turn = 0;
             }
 
+            telemetry.addData("absolute Angle", absoluteAngleToTarget);
+            telemetry.addData("relative Angle", relativeAngleToTarget);
+            telemetry.addData("relative turn Angle", relativeTurnAngle);
+
+            telemetry.addData("movement_x", movement_x);
+            telemetry.addData("movement_y", movement_y);
+            telemetry.addData("movement_turn", movement_turn);
+
+            movement_x = 0;
+            movement_y = 0;
+            movement_turn = 0;
+
+
             telemetry.addData(" xpos", robotX);
-            telemetry.addData("X Position", globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH);
+            //telemetry.addData("X Position", globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH);
             telemetry.addData(" ypos", robotY);
             telemetry.addData(" orientation", toDegrees(robotOrientation) + 90);
+            telemetry.addData(" orientation", toDegrees(robotOrientation));
             telemetry.update();
 
             CalculateMotorPowers(movement_x, movement_y, movement_turn);
@@ -320,10 +334,10 @@ public class RobotMovement extends LinearOpMode {
         verticalRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         horizontal.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        right_front.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        right_back.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        left_front.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        left_back.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        right_front.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        right_back.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        left_front.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        left_back.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
         left_front.setDirection(DcMotorSimple.Direction.REVERSE);
         right_front.setDirection(DcMotorSimple.Direction.REVERSE);

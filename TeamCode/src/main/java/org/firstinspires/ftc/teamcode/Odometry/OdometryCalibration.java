@@ -32,7 +32,7 @@ public class OdometryCalibration extends LinearOpMode {
     String right_front_name = "right_front", right_back_name = "right_back", left_front_name = "left_front", left_back_name = "left_back";
     String verticalLeftEncoderName = right_back_name, verticalRightEncoderName = left_front_name, horizontalEncoderName = left_back_name;
 
-    final double PIVOT_SPEED = 0.5;
+    final double PIVOT_SPEED = 0.25;
 
     //The amount of encoder ticks for each inch the robot moves. THIS WILL CHANGE FOR EACH ROBOT AND NEEDS TO BE UPDATED HERE
     final double COUNTS_PER_INCH = 307.699557;
@@ -86,7 +86,6 @@ public class OdometryCalibration extends LinearOpMode {
             }else{
                 setPowerAll(-PIVOT_SPEED/2, -PIVOT_SPEED/2, -PIVOT_SPEED/2, -PIVOT_SPEED/2);
             }
-
             telemetry.addData("IMU Angle", getZAngle());
             telemetry.update();
         }

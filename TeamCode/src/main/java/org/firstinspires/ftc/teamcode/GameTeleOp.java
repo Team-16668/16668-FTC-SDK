@@ -47,11 +47,17 @@ public class GameTeleOp extends LinearOpMode {
     double shooterRPM = 0;
     double shooterRevolutionChange, shooterTimeChange;
 
-    double shooterTargetRPM = 3900;
+    double normalTargetRPM = 4100;
+    double powerShotTargetRPM = 4100;
+
+    double shooterTargetRPM = normalTargetRPM;
     double shooterTotalRevolutions;
     double shooterRunTime = 0;
     double shooterStartPower = .85;
     double shooterCurrentPower = shooterStartPower;
+
+    //Logic for Power Shots
+    ShooterState shooterState = ShooterState.Normal;
 
 
 
@@ -93,12 +99,26 @@ public class GameTeleOp extends LinearOpMode {
 
             Flick();
 
+            NormalToPowerShot();
+
             telemetry.update();
         }
     }
 
+    void NormalToPowerShot() {
+        if(gamepad2.dpad_down || gamepad2.dpad_up || gamepad2.dpad_left || gamepad2.dpad_right) {
+            if(shooterState == ShooterState.Normal) {
+                shooterState = ShooterState.PowerShot;
+                shooterTargetRPM = powerShotTargetRPM;
+            } else {
+                shooterState = ShooterState.Normal;
+                shooterTargetRPM = normalTargetRPM;
+            }
+        }
+    }
+
     void Intake() {
-        intakeCurrentButtonState = gamepad1.b;
+        intakeCurrentButtonState = gamepad2.b;
 
         if(intakeCurrentButtonState != intakePrevButtonState && intakeCurrentButtonState) {
             if (intakeDirection == IntakeDirection.In) {
@@ -128,9 +148,9 @@ public class GameTeleOp extends LinearOpMode {
             shooterLastTime += 0.05;
 
             if(shooterRPM < shooterTargetRPM) {
-                shooterCurrentPower += 0.001;
+                shooterCurrentPower += 0.005;
             } else if(shooterRPM > shooterTargetRPM) {
-                shooterCurrentPower -= 0.001;
+                shooterCurrentPower -= 0.005;
             }
 
             if(shooterCurrentPower > 1) {
@@ -142,14 +162,6 @@ public class GameTeleOp extends LinearOpMode {
             shooter.setPower(shooterCurrentPower);
         }
 
-        /*
-        //Logic for Flicking the Rings
-        if(gamepad1.right_bumper) {
-            flicker.setPosition(1);
-        } else if (gamepad1.left_bumper) {
-            flicker.setPosition(0);
-        }
-         */
         shooter.setPower(shooterCurrentPower);
 
         /*
@@ -170,7 +182,7 @@ public class GameTeleOp extends LinearOpMode {
                 firstReturn = false;
             }
         }
-        tryFLick = gamepad1.dpad_up || gamepad1.dpad_down ;
+        tryFLick = gamepad2.left_bumper || gamepad2.right_bumper;
         if (timeSinceFlicker >= 1 && tryFLick) {
             telemetry.addData("running", "check for flicker button");
             telemetry.update();
@@ -182,7 +194,7 @@ public class GameTeleOp extends LinearOpMode {
 
 
     void ChangeGameStateSubroutine() {
-        gameCurrentButtonState = gamepad1.a;
+        gameCurrentButtonState = gamepad2.a;
 
         if(gameCurrentButtonState != gamePrevButtonState && gameCurrentButtonState) {
             if (state == GameState.Intake) {
@@ -213,8 +225,6 @@ public class GameTeleOp extends LinearOpMode {
         state = GameState.Shooting;
 
         intake.setPower(0);
-
-        shooterCurrentPower = shooterStartPower;
 
         shooterStartTime = System.nanoTime();
     }
@@ -358,8 +368,8 @@ public class GameTeleOp extends LinearOpMode {
         Out,
     }
 
-    private enum FlickState {
-        Flicked,
-        Unflicked
+    private enum ShooterState {
+        Normal,
+        PowerShot
     }
 }

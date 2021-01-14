@@ -6,7 +6,6 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
-@Disabled
 @TeleOp(name = "Odometry feed")
 public class OdometryFeed extends LinearOpMode {
     //Drive motors
@@ -46,7 +45,7 @@ public class OdometryFeed extends LinearOpMode {
             telemetry.addData("Unchanged Orientation", globalPositionUpdate.returnOrientation());
             telemetry.addData("Vertical left encoder position", verticalLeft.getCurrentPosition());
             telemetry.addData("Vertical right encoder position", verticalRight.getCurrentPosition());
-            telemetry.addData("horizontal encoder position", horizontal.getCurrentPosition());
+            telemetry.addData("horizontal encoder position", horizontal.getCurrentPosition()/COUNTS_PER_INCH);
 
             telemetry.addData("Thread Active", positionThread.isAlive());
             telemetry.update();
