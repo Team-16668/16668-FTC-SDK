@@ -164,12 +164,9 @@ public class GameTeleOp extends LinearOpMode {
 
         shooter.setPower(shooterCurrentPower);
 
-        /*
         telemetry.addData("Power", shooterCurrentPower);
         telemetry.addData("Revolutions", shooterTotalRevolutions);
         telemetry.addData("RPM", shooterRPM);
-
-         */
     }
 
     void Flick() {
@@ -184,8 +181,6 @@ public class GameTeleOp extends LinearOpMode {
         }
         tryFLick = gamepad2.left_bumper || gamepad2.right_bumper;
         if (timeSinceFlicker >= 1 && tryFLick) {
-            telemetry.addData("running", "check for flicker button");
-            telemetry.update();
             flicker.setPosition(0);
             flickerStartTime = System.nanoTime();
             firstReturn = true;
