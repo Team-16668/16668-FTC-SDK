@@ -26,7 +26,7 @@ public class RobotMovement extends LinearOpMode {
     String rfName = "right_front", rbName = "right_back", lfName = "left_front", lbName = "left_back";
     String verticalLeftEncoderName = rbName, verticalRightEncoderName = lfName, horizontalEncoderName = lbName;
 
-    globalCoordinatePosition globalPositionUpdate;
+    GlobalCoordinatePosition globalPositionUpdate;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -41,7 +41,7 @@ public class RobotMovement extends LinearOpMode {
         telemetry.update();
 
         //Create and start GlobalCoordinatePosition thread to constantly update the global coordinate positions.
-        globalPositionUpdate = new globalCoordinatePosition(verticalLeft, verticalRight, horizontal, COUNTS_PER_INCH, 75);
+        globalPositionUpdate = new GlobalCoordinatePosition(verticalLeft, verticalRight, horizontal, COUNTS_PER_INCH, 75);
         Thread positionThread = new Thread(globalPositionUpdate);
         positionThread.start();
 
@@ -88,7 +88,7 @@ public class RobotMovement extends LinearOpMode {
             distanceToTarget = Math.hypot(x - (robotX), y - (robotY));
 
             absoluteAngleToTarget = Math.atan2(y - robotY, x - robotX);
-            relativeAngleToTarget = mathFunctions.AngleWrap(absoluteAngleToTarget - (robotOrientation));
+            relativeAngleToTarget = MathFunctions.AngleWrap(absoluteAngleToTarget - (robotOrientation));
 
             relativeXToPoint = Math.cos(relativeAngleToTarget) * distanceToTarget;
             relativeYToPoint = Math.sin(relativeAngleToTarget) * distanceToTarget;
@@ -151,7 +151,7 @@ public class RobotMovement extends LinearOpMode {
             distanceToTarget = Math.hypot(x-(robotX), y-(robotY));
 
             absoluteAngleToTarget = Math.atan2(y-robotY, x-robotX);
-            relativeAngleToTarget = mathFunctions.AngleWrap(absoluteAngleToTarget - (robotOrientation));
+            relativeAngleToTarget = MathFunctions.AngleWrap(absoluteAngleToTarget - (robotOrientation));
 
             relativeXToPoint = Math.cos(relativeAngleToTarget) * distanceToTarget;
             relativeYToPoint = Math.sin(relativeAngleToTarget) * distanceToTarget;
@@ -187,7 +187,7 @@ public class RobotMovement extends LinearOpMode {
 
         absoluteAngleToTarget = Math.atan2(y-robotY, x-robotX);
 
-        relativeAngleToTarget = mathFunctions.AngleWrap(absoluteAngleToTarget - (robotOrientation));
+        relativeAngleToTarget = MathFunctions.AngleWrap(absoluteAngleToTarget - (robotOrientation));
         relativeTurnAngle = relativeAngleToTarget - toRadians(90);
 
         movement_turn = clip(relativeTurnAngle/ toRadians(30), -1, 1) * turnSpeed;
@@ -198,7 +198,7 @@ public class RobotMovement extends LinearOpMode {
             robotOrientation = toRadians(interpretAngle(globalPositionUpdate.returnOrientation()));
 
             absoluteAngleToTarget = Math.atan2(y-robotY, x-robotX);
-            relativeAngleToTarget = mathFunctions.AngleWrap(absoluteAngleToTarget - (robotOrientation));
+            relativeAngleToTarget = MathFunctions.AngleWrap(absoluteAngleToTarget - (robotOrientation));
 
             relativeTurnAngle = relativeAngleToTarget - toRadians(90);
             movement_turn = clip(relativeTurnAngle/ toRadians(30), -1, 1) * turnSpeed;
@@ -229,7 +229,7 @@ public class RobotMovement extends LinearOpMode {
 
         absoluteAngleToTarget = Math.atan2(y-robotY, x-robotX);
 
-        relativeAngleToTarget = mathFunctions.AngleWrap(absoluteAngleToTarget - (robotOrientation));
+        relativeAngleToTarget = MathFunctions.AngleWrap(absoluteAngleToTarget - (robotOrientation));
         relativeTurnAngle = relativeAngleToTarget - toRadians(90);
 
         movement_turn = clip(relativeTurnAngle/ toRadians(30), -1, 1) * turnSpeed;
@@ -240,7 +240,7 @@ public class RobotMovement extends LinearOpMode {
             robotOrientation = toRadians(interpretAngle(globalPositionUpdate.returnOrientation()));
 
             absoluteAngleToTarget = Math.atan2(y-robotY, x-robotX);
-            relativeAngleToTarget = mathFunctions.AngleWrap(absoluteAngleToTarget - (robotOrientation));
+            relativeAngleToTarget = MathFunctions.AngleWrap(absoluteAngleToTarget - (robotOrientation));
 
             relativeTurnAngle = relativeAngleToTarget - toRadians(90);
             movement_turn = clip(relativeTurnAngle/ toRadians(30), -1, 1) * turnSpeed;

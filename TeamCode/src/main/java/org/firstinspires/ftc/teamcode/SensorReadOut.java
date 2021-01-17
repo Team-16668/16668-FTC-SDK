@@ -18,7 +18,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 @Autonomous(name="Sensor Read Out")
 @Disabled
-public class sensorReadOut extends LinearOpMode {
+public class SensorReadOut extends LinearOpMode {
 
     public BNO055IMU imu;
     public DistanceSensor stone_distance;

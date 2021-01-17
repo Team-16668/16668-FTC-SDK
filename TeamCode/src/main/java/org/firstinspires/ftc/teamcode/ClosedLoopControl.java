@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 @TeleOp(name="Closed Loop Control Test")
 
-public class closedLoopControl extends LinearOpMode {
+public class ClosedLoopControl extends LinearOpMode {
     public DcMotor shooter;
 
     public void runOpMode() throws InterruptedException {

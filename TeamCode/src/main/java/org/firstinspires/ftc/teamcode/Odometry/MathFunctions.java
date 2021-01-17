@@ -2,7 +2,7 @@ package org.firstinspires.ftc.teamcode.Odometry;
 
 import static java.lang.Math.*;
 
-public class mathFunctions {
+public class MathFunctions {
     /**
      * Make sure angle is within -180 to 180 degrees
      * @param angle

@@ -19,7 +19,7 @@ public class OdometryTeleop extends LinearOpMode {
     String rfName = "right_front", rbName = "right_back", lfName = "left_front", lbName = "left_back";
     String verticalLeftEncoderName = rbName, verticalRightEncoderName = lfName, horizontalEncoderName = lbName;
 
-    globalCoordinatePosition globalPositionUpdate;
+    GlobalCoordinatePosition globalPositionUpdate;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -34,7 +34,7 @@ public class OdometryTeleop extends LinearOpMode {
         telemetry.update();
 
         //Create and start GlobalCoordinatePosition thread to constantly update the global coordinate positions.
-        globalPositionUpdate = new globalCoordinatePosition(verticalLeft, verticalRight, horizontal, COUNTS_PER_INCH, 75);
+        globalPositionUpdate = new GlobalCoordinatePosition(verticalLeft, verticalRight, horizontal, COUNTS_PER_INCH, 75);
         Thread positionThread = new Thread(globalPositionUpdate);
         positionThread.start();
 
@@ -85,7 +85,7 @@ public class OdometryTeleop extends LinearOpMode {
 
             telemetry.addData("X Position", globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH);
             telemetry.addData("Y Position", -globalPositionUpdate.returnYCoordinate() / COUNTS_PER_INCH);
-            telemetry.addData("Orientation (Degrees)", mathFunctions.interpretAngle(globalPositionUpdate.returnOrientation()));
+            telemetry.addData("Orientation (Degrees)", MathFunctions.interpretAngle(globalPositionUpdate.returnOrientation()));
             telemetry.update();
         }
 

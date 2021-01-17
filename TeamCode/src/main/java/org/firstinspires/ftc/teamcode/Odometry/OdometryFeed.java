@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.Odometry;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -19,7 +18,7 @@ public class OdometryFeed extends LinearOpMode {
     String rfName = "right_front", rbName = "right_back", lfName = "left_front", lbName = "left_back";
     String verticalLeftEncoderName = rbName, verticalRightEncoderName = lfName, horizontalEncoderName = lbName;
 
-    globalCoordinatePosition globalPositionUpdate;
+    GlobalCoordinatePosition globalPositionUpdate;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -31,7 +30,7 @@ public class OdometryFeed extends LinearOpMode {
         waitForStart();
 
         //Create and start GlobalCoordinatePosition thread to constantly update the global coordinate positions
-        globalPositionUpdate = new globalCoordinatePosition(verticalLeft, verticalRight, horizontal, COUNTS_PER_INCH, 75);
+        globalPositionUpdate = new GlobalCoordinatePosition(verticalLeft, verticalRight, horizontal, COUNTS_PER_INCH, 75);
         Thread positionThread = new Thread(globalPositionUpdate);
         positionThread.start();
 
@@ -41,7 +40,7 @@ public class OdometryFeed extends LinearOpMode {
             //Display Global (x, y, theta) coordinates
             telemetry.addData("X Position", globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH);
             telemetry.addData("Y Position", -globalPositionUpdate.returnYCoordinate() / COUNTS_PER_INCH);
-            telemetry.addData("Orientation (Degrees)", mathFunctions.interpretAngle(globalPositionUpdate.returnOrientation()));
+            telemetry.addData("Orientation (Degrees)", MathFunctions.interpretAngle(globalPositionUpdate.returnOrientation()));
             telemetry.addData("Unchanged Orientation", globalPositionUpdate.returnOrientation());
             telemetry.addData("Vertical left encoder position", verticalLeft.getCurrentPosition());
             telemetry.addData("Vertical right encoder position", verticalRight.getCurrentPosition());

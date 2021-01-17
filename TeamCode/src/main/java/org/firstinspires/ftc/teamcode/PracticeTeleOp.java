@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -8,8 +9,9 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.Range;
 
+@Disabled
 @TeleOp(name="Practice TeleOp")
-public class practiceTeleOp extends LinearOpMode {
+public class PracticeTeleOp extends LinearOpMode {
     public DcMotor right_front;
     public DcMotor right_back;
     public DcMotor left_front;
