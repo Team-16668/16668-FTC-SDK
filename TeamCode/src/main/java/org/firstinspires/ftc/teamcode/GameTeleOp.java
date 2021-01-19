@@ -5,60 +5,55 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.Range;
 
 import java.util.concurrent.TimeUnit;
 
 @TeleOp(name="Game TeleOp")
 public class GameTeleOp extends LinearOpMode {
-    DcMotor right_front, right_back, left_front, left_back, shooter, intake;
-    Servo claw, wobbleArm, backPlate, flicker;
+    DcMotor rightFront, rightBack, leftFront, leftBack, shooter, intake, wobbleArm;
+    Servo wobbleClaw, backPlate, flicker;
+    TouchSensor wobbleTouch1, wobbleTouch2;
 
     //Global Game State Variable
     GameState state = GameState.Intake;
 
-    //Logic for Wobble Claw and Arm
-    boolean switchClaw = false;
-    boolean switchArm = false;
-    boolean prevStateClaw = false;
-    boolean prevStateArm = false;
-    double clawPos = 1;
-    double armPos = 1;
-
     //Logic for RTM
-    boolean gamePrevButtonState = false;
-    boolean gameCurrentButtonState = false;
+    boolean gamePrevButtonState = false,
+            gameCurrentButtonState = false;
 
     //Logic for Reversing Intake Direction
     IntakeDirection intakeDirection = IntakeDirection.In;
-    boolean intakePrevButtonState = false;
-    boolean intakeCurrentButtonState = false;
+    boolean intakePrevButtonState = false,
+            intakeCurrentButtonState = false;
 
     //Logic for the Flicker
-    double flickerStartTime;
-    double timeSinceFlicker;
-    boolean firstReturn = true;
-    boolean tryFLick = false;
+    double flickerStartTime,
+            timeSinceFlicker;
+    boolean firstReturn = true,
+            tryFLick = false;
 
     //Logic for Shooter
-    double shooterStartTime;
-    double shooterLastTime = 0;
-    double shooterLastRevolutions = 0;
-    double shooterRPM = 0;
-    double shooterRevolutionChange, shooterTimeChange;
-
-    double normalTargetRPM = 4100;
-    double powerShotTargetRPM = 4100;
-
-    double shooterTargetRPM = normalTargetRPM;
-    double shooterTotalRevolutions;
-    double shooterRunTime = 0;
-    double shooterStartPower = .85;
-    double shooterCurrentPower = shooterStartPower;
+    double shooterStartTime,
+            shooterLastTime = 0,
+            shooterLastRevolutions = 0,
+            shooterRPM = 0,
+            shooterRevolutionChange,
+            shooterTimeChange,
+            normalTargetRPM = 4200,
+            powerShotTargetRPM = 4200,
+            shooterTargetRPM = normalTargetRPM,
+            shooterTotalRevolutions, shooterRunTime = 0,
+            shooterStartPower = .85,
+            shooterCurrentPower = shooterStartPower;
 
     //Logic for Power Shots
     ShooterState shooterState = ShooterState.Normal;
 
+    //Logic for Wobble Claw and
+    WobbleArmState wobbleArmState = WobbleArmState.Up;
+    ClawState clawState = ClawState.Open;
 
 
     public void runOpMode() throws InterruptedException {
@@ -106,7 +101,7 @@ public class GameTeleOp extends LinearOpMode {
     }
 
     void NormalToPowerShot() {
-        if(gamepad2.dpad_down || gamepad2.dpad_up || gamepad2.dpad_left || gamepad2.dpad_right) {
+        if(gamepad2.x) {
             if(shooterState == ShooterState.Normal) {
                 shooterState = ShooterState.PowerShot;
                 shooterTargetRPM = powerShotTargetRPM;
@@ -121,13 +116,11 @@ public class GameTeleOp extends LinearOpMode {
         intakeCurrentButtonState = gamepad2.b;
 
         if(intakeCurrentButtonState != intakePrevButtonState && intakeCurrentButtonState) {
-            if (intakeDirection == IntakeDirection.In) {
+            intakeDirection.toggle();
+            if(intakeDirection == IntakeDirection.In)
                 intake.setPower(-1);
-                intakeDirection = IntakeDirection.Out;
-            } else if (intakeDirection == IntakeDirection.Out) {
+            else
                 intake.setPower(1);
-                intakeDirection = IntakeDirection.In;
-            }
         }
         intakePrevButtonState = intakeCurrentButtonState;
     }
@@ -191,13 +184,8 @@ public class GameTeleOp extends LinearOpMode {
     void ChangeGameStateSubroutine() {
         gameCurrentButtonState = gamepad2.a;
 
-        if(gameCurrentButtonState != gamePrevButtonState && gameCurrentButtonState) {
-            if (state == GameState.Intake) {
-                SwitchToShooting();
-            } else if (state == GameState.Shooting) {
-                SwitchToIntake();
-            }
-        }
+        if(gameCurrentButtonState != gamePrevButtonState && gameCurrentButtonState)
+            state.toggle();
         gamePrevButtonState = gameCurrentButtonState;
     }
 
@@ -225,10 +213,12 @@ public class GameTeleOp extends LinearOpMode {
     }
 
     void WobbleSubroutine() {
-        CheckClaw();
-        CheckWobbleArm();
+        if(gamepad2.dpad_up || gamepad2.dpad_down) {
+            //if()
+        }
     }
 
+    /*
     void CheckClaw() {
         //Wobble Claw Code
         if(gamepad1.a) {
@@ -274,12 +264,14 @@ public class GameTeleOp extends LinearOpMode {
         //wobbleArm.setPosition(armPos);
     }
 
+     */
+
     private void DefineHardwareMap() {
         //For the drive wheels
-        right_front = hardwareMap.dcMotor.get("right_front");
-        right_back = hardwareMap.dcMotor.get("right_back");
-        left_front = hardwareMap.dcMotor.get("left_front");
-        left_back = hardwareMap.dcMotor.get("left_back");
+        rightFront = hardwareMap.dcMotor.get("right_front");
+        rightBack = hardwareMap.dcMotor.get("right_back");
+        leftFront = hardwareMap.dcMotor.get("left_front");
+        leftBack = hardwareMap.dcMotor.get("left_back");
 
         //Shooter
         shooter = hardwareMap.dcMotor.get("shooter");
@@ -288,24 +280,26 @@ public class GameTeleOp extends LinearOpMode {
         intake = hardwareMap.dcMotor.get("intake");
 
         //For the Wobble Goal
-        //claw = hardwareMap.servo.get("claw");
-        //wobbleArm = hardwareMap.servo.get("wobble_arm");
+        wobbleClaw = hardwareMap.servo.get("claw");
+        wobbleArm = hardwareMap.dcMotor.get("wobble_arm");
+
+        //For the Flicker and Backplate
         backPlate = hardwareMap.servo.get("backplate");
         flicker = hardwareMap.servo.get("flicker");
     }
 
     private void SetMotorDirectionAndMode() {
-        right_front.setDirection(DcMotorSimple.Direction.REVERSE);
-        right_back.setDirection(DcMotorSimple.Direction.REVERSE);
-        left_front.setDirection(DcMotorSimple.Direction.REVERSE);
-        left_back.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightBack.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftBack.setDirection(DcMotorSimple.Direction.REVERSE);
 
         shooter.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        right_front.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        right_back.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        left_front.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        left_back.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         shooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
     }
@@ -347,24 +341,61 @@ public class GameTeleOp extends LinearOpMode {
         }
 
         // write the values to the motors
-        right_front.setPower(FrontRight);
-        left_front.setPower(FrontLeft);
-        left_back.setPower(BackLeft);
-        right_back.setPower(BackRight);
+        rightFront.setPower(FrontRight);
+        leftFront.setPower(FrontLeft);
+        leftBack.setPower(BackLeft);
+        rightBack.setPower(BackRight);
     }
 
     private enum GameState {
-        Shooting,
-        Intake
+        Shooting, Intake;
+
+        GameState toggle() {
+            if(this.equals(Shooting))
+                return Intake;
+            else
+                return Shooting;
+        }
     }
 
     private enum IntakeDirection {
-        In,
-        Out,
+        In, Out;
+
+        IntakeDirection toggle() {
+            if(this.equals(In))
+                return Out;
+            else
+                return In;
+        }
     }
 
     private enum ShooterState {
-        Normal,
-        PowerShot
+        Normal, PowerShot;
+        ShooterState toggle() {
+            if(this.equals(Normal))
+                return PowerShot;
+            else
+                return Normal;
+        }
+    }
+
+    private enum ClawState {
+        Open, Closed;
+        ClawState toggle() {
+            if(this.equals(Open))
+                return Closed;
+            else
+                return Open;
+        }
+    }
+
+    private enum WobbleArmState {
+        Down, Up;
+        WobbleArmState toggle() {
+            if(this.equals(Down))
+                return Up;
+            else
+                return Down;
+        }
     }
 }

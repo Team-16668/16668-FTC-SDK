@@ -1,9 +1,12 @@
-package org.firstinspires.ftc.teamcode.Odometry;
+package org.firstinspires.ftc.teamcode.Odometry.Tools;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+
+import org.firstinspires.ftc.teamcode.Odometry.Tools.GlobalCoordinatePosition;
+import org.firstinspires.ftc.teamcode.Odometry.Tools.MathFunctions;
 
 @TeleOp(name = "Odometry feed")
 public class OdometryFeed extends LinearOpMode {

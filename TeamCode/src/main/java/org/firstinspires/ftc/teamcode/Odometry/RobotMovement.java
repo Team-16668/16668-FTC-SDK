@@ -4,6 +4,10 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+
+import org.firstinspires.ftc.teamcode.Odometry.Tools.GlobalCoordinatePosition;
+import org.firstinspires.ftc.teamcode.Odometry.Tools.MathFunctions;
+
 import static com.qualcomm.robotcore.util.Range.*;
 import static java.lang.Math.*;
 
@@ -24,7 +28,7 @@ public class RobotMovement extends LinearOpMode {
 
     //Hardware Map Names for drive motors and odometry wheels.
     String rfName = "right_front", rbName = "right_back", lfName = "left_front", lbName = "left_back";
-    String verticalLeftEncoderName = rbName, verticalRightEncoderName = lfName, horizontalEncoderName = lbName;
+    String verticalLeftEncoderName = rbName, verticalRightEncoderName = lfName, horizontalEncoderName = rfName;
 
     GlobalCoordinatePosition globalPositionUpdate;
 
@@ -50,15 +54,6 @@ public class RobotMovement extends LinearOpMode {
         waitForStart();
 
         if(opModeIsActive()) {
-            turnAndGo(0, 12, 0.5, 0, 2, 0.3, 0.3);
-            turnToPositionNoStop(-50,62, 0.3);
-            turnAndGo(-60, 12, 0.5, 0, 2, 0.3, 0.3);
-            turnAndGo(-90, 54, 0.5, 0, 2, 0.3, 0.3);
-            turnAndGo(-60, 110, 0.5, 0, 2, 0.3, 0.3);
-            turnAndGo(0, 110, 0.5, 0, 2, 0.3, 0.3);
-            turnAndGo(13, 70, 0.5, 0, 2, 0.3, 0.3);
-            turnAndGo(0, 10, 0.5, 0, 2, 0.3, 0.3);
-            turnToPosition(0, 12, 0.3);
         }
 
         //Stop the thread
