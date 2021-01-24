@@ -17,7 +17,7 @@ public class GameTeleOp extends LinearOpMode {
     TouchSensor wobbleTouch1, wobbleTouch2;
 
     //Global Game State Variable
-    GameState state = GameState.Intake;
+    GameState gameState = GameState.Intake;
 
     //Logic for RTM
     boolean gamePrevButtonState = false,
@@ -51,8 +51,9 @@ public class GameTeleOp extends LinearOpMode {
     //Logic for Power Shots
     ShooterState shooterState = ShooterState.Normal;
 
-    //Logic for Wobble Claw and
-    WobbleArmState wobbleArmState = WobbleArmState.Up;
+    //Logic for Wobble Claw and Arm
+    boolean currentClawButtonState, prevClawButtonState = false;
+    double leftTrigger, rightTrigger, wobblePower;
     ClawState clawState = ClawState.Open;
 
 
@@ -62,8 +63,8 @@ public class GameTeleOp extends LinearOpMode {
 
         SetMotorDirectionAndMode();
 
-        //claw.setPosition(1);
-        //wobbleArm.setPosition(1);
+        //Open Wobble Claw
+        wobbleClaw.setPosition(1);
 
         backPlate.setPosition(1);
         flicker.setPosition(1);
@@ -86,7 +87,7 @@ public class GameTeleOp extends LinearOpMode {
             //Shooting to Intake Subroutine
             ChangeGameStateSubroutine();
 
-            if(state == GameState.Shooting) {
+            if(gameState == GameState.Shooting) {
                 Shooting();
             } else {
                 Intake();
@@ -185,14 +186,14 @@ public class GameTeleOp extends LinearOpMode {
         gameCurrentButtonState = gamepad2.a;
 
         if(gameCurrentButtonState != gamePrevButtonState && gameCurrentButtonState)
-            state.toggle();
+            gameState.toggle();
         gamePrevButtonState = gameCurrentButtonState;
     }
 
     void SwitchToIntake() {
         backPlate.setPosition(1);
 
-        state = GameState.Intake;
+        gameState = GameState.Intake;
 
         intakeDirection = IntakeDirection.In;
 
@@ -205,7 +206,7 @@ public class GameTeleOp extends LinearOpMode {
     void SwitchToShooting() {
         backPlate.setPosition(0);
 
-        state = GameState.Shooting;
+        gameState = GameState.Shooting;
 
         intake.setPower(0);
 
@@ -213,58 +214,40 @@ public class GameTeleOp extends LinearOpMode {
     }
 
     void WobbleSubroutine() {
-        if(gamepad2.dpad_up || gamepad2.dpad_down) {
-            //if()
+
+        //Claw Toggle
+        currentClawButtonState = gamepad2.x;
+        if(currentClawButtonState && currentClawButtonState != prevClawButtonState) {
+            clawState.toggle();
         }
-    }
+        prevClawButtonState = currentClawButtonState;
+        Claw();
 
-    /*
-    void CheckClaw() {
-        //Wobble Claw Code
-        if(gamepad1.a) {
-            if(!prevStateClaw) {
-                switchClaw = true;
-            }
-            prevStateClaw = true;
-        } else {
-            prevStateClaw = false;
-        }
-
-        if(switchClaw) {
-            if(clawPos == 1) {
-                clawPos = 0;
-            } else {
-                clawPos = 1;
-            }
-            switchClaw = false;
-        }
-
-        //claw.setPosition(clawPos);
-    }
-
-    void CheckWobbleArm() {
         //Wobble Arm Code
-        if(gamepad1.b) {
-            if(!prevStateArm) {
-                switchArm = true;
-            }
-            prevStateArm = true;
-        } else
-            prevStateArm = false;
+        rightTrigger = gamepad2.right_trigger;
+        leftTrigger = gamepad2.left_trigger;
 
-        if(switchArm) {
-            if(armPos == 1) {
-                armPos = 0;
-            } else {
-                armPos = 1;
-            }
-            switchArm = false;
+
+        if(rightTrigger != 0) {
+            wobblePower = rightTrigger;
+        } else if (leftTrigger != 0) {
+            wobblePower = -leftTrigger;
         }
 
-        //wobbleArm.setPosition(armPos);
+        if(wobbleTouch1.isPressed() && wobblePower < 0) {
+            wobblePower = 0;
+        } else if (wobbleTouch2.isPressed() && wobblePower > 0) {
+            wobblePower = 1;
+        }
+        wobbleArm.setPower(wobblePower);
     }
 
-     */
+    private void Claw() {
+        if(clawState==ClawState.Open)
+            wobbleClaw.setPosition(0);
+        else
+            wobbleClaw.setPosition(1);
+    }
 
     private void DefineHardwareMap() {
         //For the drive wheels
@@ -282,6 +265,8 @@ public class GameTeleOp extends LinearOpMode {
         //For the Wobble Goal
         wobbleClaw = hardwareMap.servo.get("claw");
         wobbleArm = hardwareMap.dcMotor.get("wobble_arm");
+        wobbleTouch1 = hardwareMap.touchSensor.get("wobble_touch1");
+        wobbleTouch2 = hardwareMap.touchSensor.get("wobble_touch2");
 
         //For the Flicker and Backplate
         backPlate = hardwareMap.servo.get("backplate");
@@ -386,16 +371,6 @@ public class GameTeleOp extends LinearOpMode {
                 return Closed;
             else
                 return Open;
-        }
-    }
-
-    private enum WobbleArmState {
-        Down, Up;
-        WobbleArmState toggle() {
-            if(this.equals(Down))
-                return Up;
-            else
-                return Down;
         }
     }
 }
