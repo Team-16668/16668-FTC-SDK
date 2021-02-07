@@ -10,8 +10,8 @@ import com.qualcomm.robotcore.util.Range;
 
 import java.util.concurrent.TimeUnit;
 
-@TeleOp(name="Game TeleOp")
-public class GameTeleOp extends LinearOpMode {
+@TeleOp(name="Game TeleOp 1 Player Practice")
+public class GameTeleOpOnePlayer extends LinearOpMode {
     DcMotor rightFront, rightBack, leftFront, leftBack, shooter, intake, wobbleArm;
     Servo wobbleClaw, backPlate, flicker;
     TouchSensor wobbleTouch1, wobbleTouch2;
@@ -101,7 +101,7 @@ public class GameTeleOp extends LinearOpMode {
     }
 
     void NormalToPowerShot() {
-        if(gamepad2.x) {
+        if(gamepad1.x) {
             if(shooterState == ShooterState.Normal) {
                 shooterState = ShooterState.PowerShot;
                 shooterTargetRPM = powerShotTargetRPM;
@@ -113,7 +113,7 @@ public class GameTeleOp extends LinearOpMode {
     }
 
     void Intake() {
-        intakeCurrentButtonState = gamepad2.b;
+        intakeCurrentButtonState = gamepad1.b;
 
         if(intakeCurrentButtonState != intakePrevButtonState && intakeCurrentButtonState) {
             if (intakeDirection == IntakeDirection.In) {
@@ -172,7 +172,7 @@ public class GameTeleOp extends LinearOpMode {
                 firstReturn = false;
             }
         }
-        tryFLick = gamepad2.left_bumper || gamepad2.right_bumper;
+        tryFLick = gamepad1.y;
         if (timeSinceFlicker >= 1 && tryFLick) {
             flicker.setPosition(0);
             flickerStartTime = System.nanoTime();
@@ -182,7 +182,7 @@ public class GameTeleOp extends LinearOpMode {
 
 
     void ChangeGameStateSubroutine() {
-        gameCurrentButtonState = gamepad2.a;
+        gameCurrentButtonState = gamepad1.a;
 
         if(gameCurrentButtonState != gamePrevButtonState && gameCurrentButtonState)
             if(gameState == GameState.Intake) {
@@ -219,7 +219,7 @@ public class GameTeleOp extends LinearOpMode {
     private void WobbleSubroutine() {
 
         //Claw Toggle
-        currentClawButtonState = gamepad2.x;
+        currentClawButtonState = gamepad1.x;
         if(currentClawButtonState && currentClawButtonState != prevClawButtonState) {
             if(clawState == ClawState.Open)
                 clawState = ClawState.Closed;
@@ -230,8 +230,8 @@ public class GameTeleOp extends LinearOpMode {
         Claw();
 
         //Wobble Arm Code
-        rightTrigger = gamepad2.right_trigger;
-        leftTrigger = gamepad2.left_trigger;
+        rightTrigger = gamepad1.right_trigger;
+        leftTrigger = gamepad1.left_trigger;
 
 
         if(rightTrigger != 0) {
@@ -257,7 +257,7 @@ public class GameTeleOp extends LinearOpMode {
     }
 
     private void Claw() {
-        if(clawState==ClawState.Open)
+        if(clawState== ClawState.Open)
             wobbleClaw.setPosition(0);
         else
             wobbleClaw.setPosition(1);
