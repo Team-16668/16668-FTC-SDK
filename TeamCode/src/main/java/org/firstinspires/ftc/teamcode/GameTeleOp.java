@@ -28,6 +28,13 @@ public class GameTeleOp extends LinearOpMode {
     boolean intakePrevButtonState = false,
             intakeCurrentButtonState = false;
 
+    //Logic for keeping the intake on for a while
+    boolean keepIntakeOn = false;
+    double intakeStayOnTime = 1;
+    double intakeStartTime,
+            extraIntakeRunTime,
+            lastExtraIntakeRunTime;
+
     //Logic for the Flicker
     double flickerStartTime,
             timeSinceFlicker;
@@ -42,7 +49,7 @@ public class GameTeleOp extends LinearOpMode {
             shooterRevolutionChange,
             shooterTimeChange,
             normalTargetRPM = 4200,
-            powerShotTargetRPM = 4200,
+            powerShotTargetRPM = 2772,
             shooterTargetRPM = normalTargetRPM,
             shooterTotalRevolutions, shooterRunTime = 0,
             shooterStartPower = .85,
@@ -50,6 +57,8 @@ public class GameTeleOp extends LinearOpMode {
 
     //Logic for Power Shots
     ShooterState shooterState = ShooterState.Normal;
+    boolean powerShotCurrentButton = false;
+    boolean powerShotPrevButton = false;
 
     //Logic for Wobble Claw and Arm
     boolean currentClawButtonState, prevClawButtonState = false;
@@ -97,11 +106,26 @@ public class GameTeleOp extends LinearOpMode {
 
             NormalToPowerShot();
 
+            if(keepIntakeOn) {
+                IntakeTimer();
+            }
+
         }
     }
 
+    void IntakeTimer() {
+        extraIntakeRunTime = (System.nanoTime() - intakeStartTime) / TimeUnit.SECONDS.toNanos(1);
+
+        if(extraIntakeRunTime - lastExtraIntakeRunTime > intakeStayOnTime) {
+            intake.setPower(0);
+        }
+
+
+    }
+
     void NormalToPowerShot() {
-        if(gamepad2.x) {
+        powerShotCurrentButton = gamepad2.x;
+        if(gamepad2.x && powerShotCurrentButton != powerShotPrevButton) {
             if(shooterState == ShooterState.Normal) {
                 shooterState = ShooterState.PowerShot;
                 shooterTargetRPM = powerShotTargetRPM;
@@ -110,6 +134,7 @@ public class GameTeleOp extends LinearOpMode {
                 shooterTargetRPM = normalTargetRPM;
             }
         }
+        powerShotPrevButton = gamepad2.x;
     }
 
     void Intake() {
@@ -214,6 +239,11 @@ public class GameTeleOp extends LinearOpMode {
         intake.setPower(0);
 
         shooterStartTime = System.nanoTime();
+
+        keepIntakeOn = true;
+        intake.setPower(1);
+        intakeStartTime = System.nanoTime();
+        lastExtraIntakeRunTime = System.nanoTime();
     }
 
     private void WobbleSubroutine() {
