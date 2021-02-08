@@ -8,6 +8,9 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.Range;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+
+import java.sql.Time;
 import java.util.concurrent.TimeUnit;
 
 @TeleOp(name="Game TeleOp")
@@ -30,10 +33,9 @@ public class GameTeleOp extends LinearOpMode {
 
     //Logic for keeping the intake on for a while
     boolean keepIntakeOn = false;
-    double intakeStayOnTime = 1;
+    double intakeStayOnTime = 0.5;
     double intakeStartTime,
-            extraIntakeRunTime,
-            lastExtraIntakeRunTime;
+            extraIntakeRunTime;
 
     //Logic for the Flicker
     double flickerStartTime,
@@ -49,7 +51,8 @@ public class GameTeleOp extends LinearOpMode {
             shooterRevolutionChange,
             shooterTimeChange,
             normalTargetRPM = 4200,
-            powerShotTargetRPM = 2772,
+            powerShotTargetRPM = 3100,
+            powerShotStartPower = .8,
             shooterTargetRPM = normalTargetRPM,
             shooterTotalRevolutions, shooterRunTime = 0,
             shooterStartPower = .85,
@@ -63,7 +66,7 @@ public class GameTeleOp extends LinearOpMode {
     //Logic for Wobble Claw and Arm
     boolean currentClawButtonState, prevClawButtonState = false;
     double leftTrigger, rightTrigger, wobblePower;
-    ClawState clawState = ClawState.Open;
+    ClawState clawState = ClawState.Closed;
 
 
     public void runOpMode() throws InterruptedException {
@@ -110,31 +113,36 @@ public class GameTeleOp extends LinearOpMode {
                 IntakeTimer();
             }
 
+
+
         }
     }
 
     void IntakeTimer() {
         extraIntakeRunTime = (System.nanoTime() - intakeStartTime) / TimeUnit.SECONDS.toNanos(1);
 
-        if(extraIntakeRunTime - lastExtraIntakeRunTime > intakeStayOnTime) {
+        if(extraIntakeRunTime > intakeStayOnTime) {
             intake.setPower(0);
+            keepIntakeOn = false;
         }
-
-
     }
 
     void NormalToPowerShot() {
-        powerShotCurrentButton = gamepad2.x;
-        if(gamepad2.x && powerShotCurrentButton != powerShotPrevButton) {
+        powerShotCurrentButton = gamepad2.y;
+        if(powerShotCurrentButton && powerShotCurrentButton != powerShotPrevButton) {
             if(shooterState == ShooterState.Normal) {
                 shooterState = ShooterState.PowerShot;
+                shooterCurrentPower = powerShotStartPower;
                 shooterTargetRPM = powerShotTargetRPM;
             } else {
                 shooterState = ShooterState.Normal;
+                shooterCurrentPower = shooterStartPower;
                 shooterTargetRPM = normalTargetRPM;
             }
         }
-        powerShotPrevButton = gamepad2.x;
+        telemetry.addData("shooter mode", shooterState);
+        telemetry.update();
+        powerShotPrevButton = powerShotCurrentButton;
     }
 
     void Intake() {
@@ -183,10 +191,6 @@ public class GameTeleOp extends LinearOpMode {
         }
 
         shooter.setPower(shooterCurrentPower);
-
-        telemetry.addData("Power", shooterCurrentPower);
-        telemetry.addData("Revolutions", shooterTotalRevolutions);
-        telemetry.addData("RPM", shooterRPM);
     }
 
     void Flick() {
@@ -227,8 +231,6 @@ public class GameTeleOp extends LinearOpMode {
 
         shooter.setPower(0);
         intake.setPower(1);
-
-        telemetry.addData("State", "Intake");
     }
 
     private void SwitchToShooting() {
@@ -243,7 +245,6 @@ public class GameTeleOp extends LinearOpMode {
         keepIntakeOn = true;
         intake.setPower(1);
         intakeStartTime = System.nanoTime();
-        lastExtraIntakeRunTime = System.nanoTime();
     }
 
     private void WobbleSubroutine() {
@@ -264,10 +265,13 @@ public class GameTeleOp extends LinearOpMode {
         leftTrigger = gamepad2.left_trigger;
 
 
-        if(rightTrigger != 0) {
-            wobblePower = .6;
-        } else if (leftTrigger != 0) {
-            wobblePower = -.6;
+        if(leftTrigger != 0 && rightTrigger != 0) {
+            wobblePower = 0;
+        }
+        else if(leftTrigger!= 0) {
+            wobblePower = 0.37;
+        } else if (rightTrigger != 0) {
+            wobblePower = -0.45;
         } else {
             wobblePower = 0;
         }
@@ -278,11 +282,6 @@ public class GameTeleOp extends LinearOpMode {
             wobblePower = 0;
         }
 
-        telemetry.addData("wobble 1", wobbleTouch1.isPressed());
-        telemetry.addData("wobble 2", wobbleTouch2.isPressed());
-        telemetry.addData("claw State", clawState);
-
-        telemetry.update();
         wobbleArm.setPower(wobblePower);
     }
 
@@ -359,10 +358,10 @@ public class GameTeleOp extends LinearOpMode {
             BackLeft *= 0.25;
             BackRight *= 0.25;
         } else if(gamepad1.right_bumper) {
-            FrontRight *= 0.75;
-            FrontLeft *= 0.75;
-            BackLeft *= 0.75;
-            BackRight *= 0.75;
+            FrontRight *= 0.9;
+            FrontLeft *= 0.9;
+            BackLeft *= 0.9;
+            BackRight *= 0.9;
         } else {
             FrontRight *= 0.55;
             FrontLeft *= 0.55;
