@@ -19,7 +19,7 @@ public class OdometryFeed extends LinearOpMode {
 
     //Hardware Map Names for drive motors and odometry wheels. THIS WILL CHANGE ON EACH ROBOT, YOU NEED TO UPDATE THESE VALUES ACCORDINGLY
     String rfName = "right_front", rbName = "right_back", lfName = "left_front", lbName = "left_back";
-    String verticalLeftEncoderName = rbName, verticalRightEncoderName = lfName, horizontalEncoderName = lbName;
+    String verticalLeftEncoderName = rbName, verticalRightEncoderName = lfName, horizontalEncoderName = rfName;
 
     GlobalCoordinatePosition globalPositionUpdate;
 
@@ -41,13 +41,19 @@ public class OdometryFeed extends LinearOpMode {
 
         while (opModeIsActive()) {
             //Display Global (x, y, theta) coordinates
-            telemetry.addData("X Position", globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH);
-            telemetry.addData("Y Position", -globalPositionUpdate.returnYCoordinate() / COUNTS_PER_INCH);
-            telemetry.addData("Orientation (Degrees)", MathFunctions.interpretAngle(globalPositionUpdate.returnOrientation()));
-            telemetry.addData("Unchanged Orientation", globalPositionUpdate.returnOrientation());
-            telemetry.addData("Vertical left encoder position", verticalLeft.getCurrentPosition());
-            telemetry.addData("Vertical right encoder position", verticalRight.getCurrentPosition());
-            telemetry.addData("horizontal encoder position", horizontal.getCurrentPosition()/COUNTS_PER_INCH);
+            //telemetry.addData("X Position", globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH);
+            //telemetry.addData("Y Position", -globalPositionUpdate.returnYCoordinate() / COUNTS_PER_INCH);
+            //telemetry.addData("Orientation (Degrees)", MathFunctions.interpretAngle(globalPositionUpdate.returnOrientation()));
+            //telemetry.addData("Unchanged Orientation", globalPositionUpdate.returnOrientation());
+            telemetry.addData("VL pos", verticalLeft.getCurrentPosition());
+            telemetry.addData("VL inches", verticalLeft.getCurrentPosition()/COUNTS_PER_INCH);
+            telemetry.addData("VL rotations", verticalLeft.getCurrentPosition()/2880);
+            telemetry.addData("VR pos", verticalRight.getCurrentPosition());
+            telemetry.addData("VR inches", verticalRight.getCurrentPosition()/COUNTS_PER_INCH);
+            telemetry.addData("VR rotations", verticalRight.getCurrentPosition()/2880);
+            telemetry.addData("H pos", horizontal.getCurrentPosition());
+            telemetry.addData("H inches", horizontal.getCurrentPosition()/COUNTS_PER_INCH);
+            telemetry.addData("H rotations", horizontal.getCurrentPosition()/2880);
 
             telemetry.addData("Thread Active", positionThread.isAlive());
             telemetry.update();
