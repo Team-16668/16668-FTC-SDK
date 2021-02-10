@@ -110,11 +110,6 @@ public class RobotMovement extends LinearOpMode {
             telemetry.addData("movement_y", movement_y);
             telemetry.addData("movement_turn", movement_turn);
 
-            movement_x = 0;
-            movement_y = 0;
-            movement_turn = 0;
-
-
             telemetry.addData(" xpos", robotX);
             //telemetry.addData("X Position", globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH);
             telemetry.addData(" ypos", robotY);
@@ -187,7 +182,7 @@ public class RobotMovement extends LinearOpMode {
 
         movement_turn = clip(relativeTurnAngle/ toRadians(30), -1, 1) * turnSpeed;
 
-        while(opModeIsActive() && abs(movement_turn) > 0.1) {
+        while(opModeIsActive() && abs(movement_turn) > 0.2) {
             robotX = globalPositionUpdate.returnXCoordinate()/COUNTS_PER_INCH;
             robotY = -globalPositionUpdate.returnYCoordinate()/COUNTS_PER_INCH;
             robotOrientation = toRadians(interpretAngle(globalPositionUpdate.returnOrientation()));

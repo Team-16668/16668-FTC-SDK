@@ -51,9 +51,7 @@ public class GlobalCoordinatePosition implements Runnable{
         sleepTime = threadSleepDelay;
 
         robotEncoderWheelDistance = Double.parseDouble(ReadWriteFile.readFile(wheelBaseSeparationFile).trim()) * COUNTS_PER_INCH;
-        //robotEncoderWheelDistance = 14;
         this.horizontalEncoderTickPerDegreeOffset = Double.parseDouble(ReadWriteFile.readFile(horizontalTickOffsetFile).trim());
-        //this.horizontalEncoderTickPerDegreeOffset = -37.585;
 
     }
 

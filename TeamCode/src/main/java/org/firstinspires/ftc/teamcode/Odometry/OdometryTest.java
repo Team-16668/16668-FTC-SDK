@@ -27,8 +27,15 @@ public class OdometryTest extends RobotMovement {
 
         waitForStart();
 
+        double error = 1;
+
         if(opModeIsActive()) {
-            goToPosition(12, 0, 0.5, 0, 2, 0.5);
+            goToPosition(0, 12, 0.5, 0, error, 0.5);
+            turnAndGo(12,0,0.5,0,error,0.3,0.3);
+            turnAndGo(0,-12,0.5,0,error,0.3,0.3);
+            turnAndGo(-12,0,0.5,0,error,0.3,0.3);
+            turnAndGo(0,0,0.5,0,error,0.3,0.3);
+            turnToPosition(0, 12, 0.3);
             /*
             turnAndGo(12, 0, 0.5, 0, 2, 0.5, 0.3);
             turnAndGo(0, 12, 0.5, 0, 2, 0.5, 0.3);
@@ -37,7 +44,7 @@ public class OdometryTest extends RobotMovement {
             turnAndGo(0, 0, 0.5, 0, 2, 0.5, 0.3);
              */
 
-            sleep(500);
+            sleep(200000);
         }
 
 
