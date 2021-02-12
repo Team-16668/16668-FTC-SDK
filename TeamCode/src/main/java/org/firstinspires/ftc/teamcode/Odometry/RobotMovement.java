@@ -324,10 +324,10 @@ public class RobotMovement extends LinearOpMode {
         verticalRight.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         horizontal.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        right_front.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        right_back.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        left_front.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        left_back.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        right_front.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        right_back.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        left_front.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        left_back.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         left_front.setDirection(DcMotorSimple.Direction.REVERSE);
         right_front.setDirection(DcMotorSimple.Direction.REVERSE);

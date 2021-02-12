@@ -102,6 +102,11 @@ public class OdometryCalibration extends LinearOpMode {
         }
 
         //Record IMU and encoder values to calculate the constants for the global position algorithm
+
+        double verticalLeftPos = -verticalLeft.getCurrentPosition();
+        double verticalRightPos = -verticalRight.getCurrentPosition();
+        double horizontalPos = -horizontal.getCurrentPosition();
+
         double angle = getZAngle();
         //angle = 106.1875;
 
@@ -112,7 +117,7 @@ public class OdometryCalibration extends LinearOpMode {
        */
         //encoderDifference = counts
         double encoderDifference = Math.abs(verticalLeft.getCurrentPosition()) + (Math.abs(verticalRight.getCurrentPosition()));
-        encoderDifference = Math.abs(verticalLeft.getCurrentPosition()) + (Math.abs(verticalRight.getCurrentPosition()));
+        encoderDifference = Math.abs(verticalLeftPos) + (verticalRightPos);
 
         //verticalEncoderTickOffsetPerDegree = counts/degree
         double verticalEncoderTickOffsetPerDegree = encoderDifference/angle;
@@ -121,7 +126,7 @@ public class OdometryCalibration extends LinearOpMode {
         double wheelBaseSeparation = (2*90*verticalEncoderTickOffsetPerDegree)/(Math.PI*COUNTS_PER_INCH);
 
         //horizontalTickOffset = counts/radian
-        horizontalTickOffset = horizontal.getCurrentPosition()/Math.toRadians(getZAngle());
+        horizontalTickOffset = horizontalPos/Math.toRadians(getZAngle());
         //horizontalTickOffset = horizontal.getCurrentPosition()/getZAngle();
 
         //Write the constants to text files
@@ -136,9 +141,9 @@ public class OdometryCalibration extends LinearOpMode {
 
             //Display raw values
             telemetry.addData("IMU Angle", getZAngle());
-            telemetry.addData("Vertical Left Position", -verticalLeft.getCurrentPosition());
-            telemetry.addData("Vertical Right Position", verticalRight.getCurrentPosition());
-            telemetry.addData("Horizontal Position", horizontal.getCurrentPosition());
+            telemetry.addData("Vertical Left Position", -verticalLeftPos);
+            telemetry.addData("Vertical Right Position", verticalRightPos);
+            telemetry.addData("Horizontal Position", horizontalPos);
             telemetry.addData("Vertical Encoder Offset", verticalEncoderTickOffsetPerDegree);
 
             //Update values

@@ -79,7 +79,6 @@ public class GlobalCoordinatePosition implements Runnable{
         normalEncoderWheelPosition = (horizontalEncoder.getCurrentPosition()*normalEncoderPositionMultiplier);
         //rawHorizontalChange = counts
         double rawHorizontalChange = normalEncoderWheelPosition - prevNormalEncoderWheelPosition;
-        //
         double horizontalChange = rawHorizontalChange - (changeInRobotOrientation*horizontalEncoderTickPerDegreeOffset);
 
         double p = ((rightChange + leftChange) / 2);
