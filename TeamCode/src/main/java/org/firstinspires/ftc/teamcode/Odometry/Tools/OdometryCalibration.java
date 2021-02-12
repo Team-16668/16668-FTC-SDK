@@ -122,7 +122,7 @@ public class OdometryCalibration extends LinearOpMode {
 
         //horizontalTickOffset = counts/radian
         horizontalTickOffset = horizontal.getCurrentPosition()/Math.toRadians(getZAngle());
-        //horizontalTickOffset = -3508/Math.toRadians(angle);
+        //horizontalTickOffset = horizontal.getCurrentPosition()/getZAngle();
 
         //Write the constants to text files
         ReadWriteFile.writeFile(wheelBaseSeparationFile, String.valueOf(wheelBaseSeparation));
