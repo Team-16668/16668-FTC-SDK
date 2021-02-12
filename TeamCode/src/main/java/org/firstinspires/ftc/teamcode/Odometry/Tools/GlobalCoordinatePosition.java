@@ -14,7 +14,7 @@ public class GlobalCoordinatePosition implements Runnable{
     //Odometry wheels
     private DcMotor verticalEncoderLeft, verticalEncoderRight, horizontalEncoder;
 
-    //Thead run condition
+    //Thread run condition
     private boolean isRunning = true;
 
     //Position variables used for storage and calculations
@@ -60,19 +60,26 @@ public class GlobalCoordinatePosition implements Runnable{
      */
     private void globalCoordinatePositionUpdate(){
         //Get Current Positions
+        //Both of these are in counts
         verticalLeftEncoderWheelPosition = (verticalEncoderLeft.getCurrentPosition() * verticalLeftEncoderPositionMultiplier);
         verticalRightEncoderWheelPosition = (verticalEncoderRight.getCurrentPosition() * verticalRightEncoderPositionMultiplier);
 
+        //Both are in counts
         double leftChange = verticalLeftEncoderWheelPosition - previousVerticalLeftEncoderWheelPosition;
         double rightChange = verticalRightEncoderWheelPosition - previousVerticalRightEncoderWheelPosition;
 
         //Calculate Angle
+        //changeInRobotOrientation = unitless
         changeInRobotOrientation = (leftChange - rightChange) / (robotEncoderWheelDistance);
+        //robotOrientationRadians = radians
         robotOrientationRadians = ((robotOrientationRadians + changeInRobotOrientation));
 
         //Get the components of the motion
+        //normalEncoderWheelPosition = counts
         normalEncoderWheelPosition = (horizontalEncoder.getCurrentPosition()*normalEncoderPositionMultiplier);
+        //rawHorizontalChange = counts
         double rawHorizontalChange = normalEncoderWheelPosition - prevNormalEncoderWheelPosition;
+        //
         double horizontalChange = rawHorizontalChange - (changeInRobotOrientation*horizontalEncoderTickPerDegreeOffset);
 
         double p = ((rightChange + leftChange) / 2);

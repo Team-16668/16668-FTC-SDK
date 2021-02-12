@@ -5,6 +5,7 @@ import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -19,7 +20,7 @@ import java.io.File;
  * Odometry system calibration. Run this OpMode to generate the necessary constants to calculate the robot's global position on the field.
  * The Global Positioning Algorithm will not function and will throw an error if this program is not run first
  */
-@Autonomous(name = "Odometry System Calibration", group = "Calibration")
+@TeleOp(name = "Odometry System Calibration", group = "Calibration")
 public class OdometryCalibration extends LinearOpMode {
     //Drive motors
     DcMotor right_front, right_back, left_front, left_back;
@@ -102,22 +103,26 @@ public class OdometryCalibration extends LinearOpMode {
 
         //Record IMU and encoder values to calculate the constants for the global position algorithm
         double angle = getZAngle();
-        angle = 106.1875;
+        //angle = 106.1875;
 
         /*
         Encoder Difference is calculated by the formula (leftEncoder - rightEncoder)
         Since the left encoder is also mapped to a drive motor, the encoder value needs to be reversed with the negative sign in front
         THIS MAY NEED TO BE CHANGED FOR EACH ROBOT
        */
+        //encoderDifference = counts
         double encoderDifference = Math.abs(verticalLeft.getCurrentPosition()) + (Math.abs(verticalRight.getCurrentPosition()));
-        encoderDifference = Math.abs(4398) + (Math.abs(-4593));
+        encoderDifference = Math.abs(verticalLeft.getCurrentPosition()) + (Math.abs(verticalRight.getCurrentPosition()));
 
+        //verticalEncoderTickOffsetPerDegree = counts/degree
         double verticalEncoderTickOffsetPerDegree = encoderDifference/angle;
 
+        //wheelBaseSeparation = in.
         double wheelBaseSeparation = (2*90*verticalEncoderTickOffsetPerDegree)/(Math.PI*COUNTS_PER_INCH);
 
+        //horizontalTickOffset = counts/radian
         horizontalTickOffset = horizontal.getCurrentPosition()/Math.toRadians(getZAngle());
-        horizontalTickOffset = -3508/Math.toRadians(angle);
+        //horizontalTickOffset = -3508/Math.toRadians(angle);
 
         //Write the constants to text files
         ReadWriteFile.writeFile(wheelBaseSeparationFile, String.valueOf(wheelBaseSeparation));
