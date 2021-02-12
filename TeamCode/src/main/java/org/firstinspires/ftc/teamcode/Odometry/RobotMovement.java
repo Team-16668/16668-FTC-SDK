@@ -6,7 +6,9 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import org.firstinspires.ftc.teamcode.Odometry.Tools.GlobalCoordinatePosition;
+import org.firstinspires.ftc.teamcode.Odometry.Tools.Line;
 import org.firstinspires.ftc.teamcode.Odometry.Tools.MathFunctions;
+import org.firstinspires.ftc.teamcode.Odometry.Tools.Point;
 
 import static com.qualcomm.robotcore.util.Range.*;
 import static java.lang.Math.*;
@@ -125,6 +127,148 @@ public class RobotMovement extends LinearOpMode {
 
     }
 
+    public void stayAtAbsoluteAngle(double x, double y, double movementSpeed, double preferredAbsoluteAngle, double error, double turnSpeed) {
+        distanceToTarget = Math.hypot(x - (globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH), y - (-globalPositionUpdate.returnYCoordinate() / COUNTS_PER_INCH));
+
+        robotX = globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH;
+        robotY = -globalPositionUpdate.returnYCoordinate() / COUNTS_PER_INCH;
+
+        Line line = calculateLineFromAngle(robotX, robotY, preferredAbsoluteAngle);
+
+        while (opModeIsActive() && distanceToTarget > error) {
+
+            robotX = globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH;
+            robotY = -globalPositionUpdate.returnYCoordinate() / COUNTS_PER_INCH;
+            robotOrientation = toRadians(interpretAngle(globalPositionUpdate.returnOrientation()));
+
+            distanceToTarget = Math.hypot(x - (robotX), y - (robotY));
+
+            absoluteAngleToTarget = Math.atan2(y - robotY, x - robotX);
+            relativeAngleToTarget = MathFunctions.AngleWrap(absoluteAngleToTarget - (robotOrientation));
+
+            relativeXToPoint = Math.cos(relativeAngleToTarget) * distanceToTarget;
+            relativeYToPoint = Math.sin(relativeAngleToTarget) * distanceToTarget;
+
+            MovementPowerDenominator = abs(relativeXToPoint) + abs(relativeYToPoint);
+            movementXPower = relativeXToPoint / MovementPowerDenominator;
+            movementYPower = relativeYToPoint / MovementPowerDenominator;
+
+            movement_x = movementXPower * movementSpeed;
+            movement_y = movementYPower * movementSpeed;
+
+            Point currentPoint = new Point(robotX, robotY);
+
+            Line currentLine = perpendicularThroughPoint(line, currentPoint);
+
+            Point turnToPoint = Intersection(line, currentLine);
+
+            double turnToAbsoluteAngleToTarget = Math.atan2(turnToPoint.y - robotY, turnToPoint.x - robotX);
+            double turnToRelativeAngleToTarget = MathFunctions.AngleWrap(turnToAbsoluteAngleToTarget - (robotOrientation));
+
+            double turnToRelativeTurnAngle = turnToRelativeAngleToTarget - toRadians(90);
+            movement_turn = clip(turnToRelativeTurnAngle / toRadians(30), -1, 1) * turnSpeed;
+
+            if (distanceToTarget < 5) {
+                movement_turn = 0;
+            }
+
+            telemetry.addData("absolute Angle", absoluteAngleToTarget);
+            telemetry.addData("relative Angle", relativeAngleToTarget);
+            telemetry.addData("relative turn Angle", relativeTurnAngle);
+
+            telemetry.addData("movement_x", movement_x);
+            telemetry.addData("movement_y", movement_y);
+            telemetry.addData("movement_turn", movement_turn);
+
+            telemetry.addData(" xpos", robotX);
+            //telemetry.addData("X Position", globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH);
+            telemetry.addData(" ypos", robotY);
+            telemetry.addData(" orientation", toDegrees(robotOrientation) + 90);
+            telemetry.addData(" orientation", toDegrees(robotOrientation));
+            telemetry.update();
+
+            CalculateMotorPowers(movement_x, movement_y, movement_turn);
+        }
+
+        //Turns motors off
+        StopMotors();
+
+    }
+
+    public Line calculateLineFromAngle(double robotPosX, double robotPosY, double orientation) {
+        Point startingPoint = new Point(robotPosX, robotPosY);
+
+        Point targetPoint = castPoint(orientation, startingPoint);
+
+        Line line = LineFromTwoPoints(startingPoint, targetPoint);
+
+        Line perpendicularLine = perpendicularThroughPoint(line, targetPoint);
+
+        return perpendicularLine;
+    }
+
+    public Point castPoint(double orientation, Point startingPoint) {
+        Point targetPoint = new Point(0, 0);
+        double xComponent = 0;
+        double yComponent = 0;
+
+        double robotOrientationDegrees = toDegrees(orientation);
+
+        if(robotOrientationDegrees >= 0 && robotOrientationDegrees <= 90) {
+            xComponent = 1000 * Math.sin(robotOrientationDegrees);
+            yComponent = 1000 * Math.cos(robotOrientationDegrees);
+
+            targetPoint.x = xComponent + startingPoint.x;
+            targetPoint.y = yComponent + startingPoint.y;
+        } else if(robotOrientationDegrees >=90 && robotOrientationDegrees <= 180) {
+            robotOrientationDegrees -= 90;
+
+            xComponent = 1000 * Math.cos(robotOrientationDegrees);
+            yComponent = 1000 * Math.sin(robotOrientationDegrees);
+
+            targetPoint.x = xComponent + startingPoint.x;
+            targetPoint.y = yComponent + startingPoint.y;
+        }else if (robotOrientationDegrees <= 0 && robotOrientationDegrees >= -90) {
+            robotOrientationDegrees *= -1;
+
+            xComponent = 1000 * Math.sin(robotOrientationDegrees);
+            yComponent = 1000 * Math.cos(robotOrientationDegrees);
+
+            targetPoint.x = -xComponent + startingPoint.x;
+            targetPoint.y = -yComponent + startingPoint.y;
+        }else if (robotOrientationDegrees <= -90 && robotOrientationDegrees >= -180) {
+            robotOrientationDegrees += 90;
+
+            xComponent = 1000 * Math.cos(robotOrientationDegrees);
+            yComponent = 1000 * Math.sin(robotOrientationDegrees);
+
+            targetPoint.x = -xComponent + startingPoint.x;
+            targetPoint.y = -yComponent + startingPoint.y;
+        }
+
+        //Point startingPoint = new Point(robotPosX, robotPosY);
+        return targetPoint;
+    }
+
+    public Point Intersection(Line line1, Line line2) {
+        double xIntersection = (line2.b - line1.b) / (line1.m-line2.m);
+        double yIntersection = (line1.m*xIntersection) + line1.b;
+
+        return new Point(xIntersection, yIntersection);
+    }
+
+
+
+    /**
+     *
+     * @param x x coordinate to turn and go to
+     * @param y y coordinate to turn and go to
+     * @param movementSpeed movement speed
+     * @param preferredAngle preferred angle (0 = straight, 90 = to the right, -90 = to the left, use 179 or -179 for backwards, as 180 wraps weirdly)
+     * @param error how close (in inches) you need to get to the point. The closer you get, the higher the chance of spasing (spelling?) around the point
+     * @param turnSpeed1 how fast the robot should turn towards the position
+     * @param turnSpeed2 how fast the robot should turn when it's moving tp tje [pomt
+     */
     public void turnAndGo(double x, double y, double movementSpeed, double preferredAngle, double error, double turnSpeed1, double turnSpeed2) {
         turnToPosition(x, y, turnSpeed1);
         goToPosition(x, y, movementSpeed, preferredAngle, error, turnSpeed2);
@@ -364,5 +508,17 @@ public class RobotMovement extends LinearOpMode {
         } else {
             return true;
         }
+    }
+
+    public Line LineFromTwoPoints(Point p1, Point p2) {
+        double slope = (p2.y-p1.y)/(p2.x-p1.y);
+        return new Line(slope, p1.y - (slope * p1.x));
+    }
+
+    public Line perpendicularThroughPoint(Line line, Point point) {
+        double m = -(1/line.m);
+        double b = point.y - (m*point.x);
+
+        return new Line(m, b);
     }
 }
