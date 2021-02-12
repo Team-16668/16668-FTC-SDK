@@ -212,35 +212,35 @@ public class RobotMovement extends LinearOpMode {
         double xComponent = 0;
         double yComponent = 0;
 
-        double robotOrientationDegrees = toDegrees(orientation);
+        double angle = orientation;
 
-        if(robotOrientationDegrees >= 0 && robotOrientationDegrees <= 90) {
-            xComponent = 1000 * Math.sin(robotOrientationDegrees);
-            yComponent = 1000 * Math.cos(robotOrientationDegrees);
-
-            targetPoint.x = xComponent + startingPoint.x;
-            targetPoint.y = yComponent + startingPoint.y;
-        } else if(robotOrientationDegrees >=90 && robotOrientationDegrees <= 180) {
-            robotOrientationDegrees -= 90;
-
-            xComponent = 1000 * Math.cos(robotOrientationDegrees);
-            yComponent = 1000 * Math.sin(robotOrientationDegrees);
+        if(angle >= 0 && angle <= 90) {
+            xComponent = 1000 * Math.sin(angle);
+            yComponent = 1000 * Math.cos(angle);
 
             targetPoint.x = xComponent + startingPoint.x;
             targetPoint.y = yComponent + startingPoint.y;
-        }else if (robotOrientationDegrees <= 0 && robotOrientationDegrees >= -90) {
-            robotOrientationDegrees *= -1;
+        } else if(angle >=90 && angle <= 180) {
+            angle -= 90;
 
-            xComponent = 1000 * Math.sin(robotOrientationDegrees);
-            yComponent = 1000 * Math.cos(robotOrientationDegrees);
+            xComponent = 1000 * Math.cos(angle);
+            yComponent = 1000 * Math.sin(angle);
+
+            targetPoint.x = xComponent + startingPoint.x;
+            targetPoint.y = yComponent + startingPoint.y;
+        }else if (angle <= 0 && angle >= -90) {
+            angle *= -1;
+
+            xComponent = 1000 * Math.sin(angle);
+            yComponent = 1000 * Math.cos(angle);
 
             targetPoint.x = -xComponent + startingPoint.x;
             targetPoint.y = -yComponent + startingPoint.y;
-        }else if (robotOrientationDegrees <= -90 && robotOrientationDegrees >= -180) {
-            robotOrientationDegrees += 90;
+        }else if (angle <= -90 && angle >= -180) {
+            angle += 90;
 
-            xComponent = 1000 * Math.cos(robotOrientationDegrees);
-            yComponent = 1000 * Math.sin(robotOrientationDegrees);
+            xComponent = 1000 * Math.cos(angle);
+            yComponent = 1000 * Math.sin(angle);
 
             targetPoint.x = -xComponent + startingPoint.x;
             targetPoint.y = -yComponent + startingPoint.y;
