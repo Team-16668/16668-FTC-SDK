@@ -4,11 +4,15 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 
 import org.firstinspires.ftc.teamcode.Odometry.Tools.GlobalCoordinatePosition;
 import org.firstinspires.ftc.teamcode.Odometry.Tools.Line;
 import org.firstinspires.ftc.teamcode.Odometry.Tools.MathFunctions;
 import org.firstinspires.ftc.teamcode.Odometry.Tools.Point;
+
+import java.util.concurrent.TimeUnit;
 
 import static com.qualcomm.robotcore.util.Range.*;
 import static java.lang.Math.*;
@@ -19,6 +23,45 @@ public class RobotMovement extends LinearOpMode {
     DcMotor right_front, right_back, left_front, left_back;
     //Odometry Wheels
     DcMotor verticalLeft, verticalRight, horizontal;
+
+    //Ultimate Goal Specific Hardware
+    DcMotor shooter, intake, wobbleArm;
+    Servo wobbleClaw, backPlate, flicker;
+    TouchSensor wobbleTouch1, wobbleTouch2;
+
+    //Logic for the Shooter
+    double shooterStartTime,
+            encoderPosition,
+            shooterLastTime = 0,
+            shooterLastRevolutions = 0,
+            shooterRPM = 0,
+            shooterRevolutionChange,
+            shooterTimeChange,
+            normalTargetRPM = 4200,
+            powerShotTargetRPM = 3450,
+            powerShotStartPower = .82,
+            shooterTargetRPM = normalTargetRPM,
+            shooterTotalRevolutions, shooterRunTime = 0,
+            shooterStartPower = .85,
+            shooterCurrentPower = shooterStartPower;
+
+    //Logic for the Flicker
+    double flickerStartTime,
+            timeSinceFlicker;
+    boolean firstReturn = true,
+            tryFLick = false;
+
+    //Background Task Variables
+    boolean putWobbleArmDown = false;
+    boolean putWobbleArmUp = false;
+    boolean turnIntakeOnForward = false;
+    boolean turnIntakeOnBackward = false;
+    boolean stopIntake = false;
+    boolean runShooterControl = false;
+    boolean setPowerShotRPM = false;
+    boolean setNormalRPM = false;
+    boolean stopShooter = false;
+
 
     final double COUNTS_PER_INCH = 307.699557;
 
@@ -120,6 +163,8 @@ public class RobotMovement extends LinearOpMode {
             telemetry.update();
 
             CalculateMotorPowers(movement_x, movement_y, movement_turn);
+
+            BackGroundTaskCheck();
         }
 
         //Turns motors off
@@ -172,9 +217,8 @@ public class RobotMovement extends LinearOpMode {
                 movement_turn = 0;
             }
 
-            telemetry.addData("absolute Angle", absoluteAngleToTarget);
-            telemetry.addData("relative Angle", relativeAngleToTarget);
-            telemetry.addData("relative turn Angle", relativeTurnAngle);
+            telemetry.addData("Target Point X", turnToPoint.x);
+            telemetry.addData("Target Point Y", turnToPoint.y);
 
             telemetry.addData("movement_x", movement_x);
             telemetry.addData("movement_y", movement_y);
@@ -188,6 +232,8 @@ public class RobotMovement extends LinearOpMode {
             telemetry.update();
 
             CalculateMotorPowers(movement_x, movement_y, movement_turn);
+
+            BackGroundTaskCheck();
         }
 
         //Turns motors off
@@ -270,7 +316,7 @@ public class RobotMovement extends LinearOpMode {
      * @param turnSpeed2 how fast the robot should turn when it's moving tp tje [pomt
      */
     public void turnAndGo(double x, double y, double movementSpeed, double preferredAngle, double error, double turnSpeed1, double turnSpeed2) {
-        turnToPosition(x, y, turnSpeed1);
+        turnToPosition(x, y, turnSpeed1, preferredAngle,.2, 30);
         goToPosition(x, y, movementSpeed, preferredAngle, error, turnSpeed2);
     }
 
@@ -306,6 +352,8 @@ public class RobotMovement extends LinearOpMode {
             movement_turn = 0;
 
             CalculateMotorPowers(movement_x, movement_y, movement_turn);
+
+            BackGroundTaskCheck();
         }
 
         //Turns motors off
@@ -313,7 +361,7 @@ public class RobotMovement extends LinearOpMode {
 
     }
 
-    public void turnToPosition(double x, double y, double turnSpeed) {
+    public void turnToPosition(double x, double y, double preferredAngle, double turnSpeed, double threshhold, double scale) {
 
         robotX = globalPositionUpdate.returnXCoordinate()/COUNTS_PER_INCH;
         robotY = -globalPositionUpdate.returnYCoordinate()/COUNTS_PER_INCH;
@@ -322,11 +370,14 @@ public class RobotMovement extends LinearOpMode {
         absoluteAngleToTarget = Math.atan2(y-robotY, x-robotX);
 
         relativeAngleToTarget = MathFunctions.AngleWrap(absoluteAngleToTarget - (robotOrientation));
-        relativeTurnAngle = relativeAngleToTarget - toRadians(90);
+        relativeTurnAngle = relativeAngleToTarget - toRadians(90) + toRadians(preferredAngle);
 
-        movement_turn = clip(relativeTurnAngle/ toRadians(30), -1, 1) * turnSpeed;
+        movement_turn = clip(relativeTurnAngle / toRadians(scale), -1, 1) * turnSpeed;
 
-        while(opModeIsActive() && abs(movement_turn) > 0.2) {
+        while(opModeIsActive() && abs(movement_turn) > threshhold) {
+            telemetry.addData("loop finished", abs(movement_turn) > threshhold);
+            telemetry.addData("moving", abs(movement_turn)-threshhold);
+            telemetry.addData("threshold", threshhold);
             robotX = globalPositionUpdate.returnXCoordinate()/COUNTS_PER_INCH;
             robotY = -globalPositionUpdate.returnYCoordinate()/COUNTS_PER_INCH;
             robotOrientation = toRadians(interpretAngle(globalPositionUpdate.returnOrientation()));
@@ -334,8 +385,8 @@ public class RobotMovement extends LinearOpMode {
             absoluteAngleToTarget = Math.atan2(y-robotY, x-robotX);
             relativeAngleToTarget = MathFunctions.AngleWrap(absoluteAngleToTarget - (robotOrientation));
 
-            relativeTurnAngle = relativeAngleToTarget - toRadians(90);
-            movement_turn = clip(relativeTurnAngle/ toRadians(30), -1, 1) * turnSpeed;
+            relativeTurnAngle = relativeAngleToTarget - toRadians(90) + toRadians(preferredAngle);
+            movement_turn = clip(relativeTurnAngle / toRadians(scale), -1, 1) * turnSpeed;
 
             telemetry.addData(" xpos", robotX);
             telemetry.addData("X Position", globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH);
@@ -348,6 +399,8 @@ public class RobotMovement extends LinearOpMode {
             right_back.setPower(clip(movement_turn, -1, 1));
             left_front.setPower(clip(movement_turn, -1, 1));
             left_back.setPower(clip(movement_turn, -1, 1));
+
+            BackGroundTaskCheck();
         }
 
         //Turns motors off
@@ -390,8 +443,53 @@ public class RobotMovement extends LinearOpMode {
             right_back.setPower(clip(movement_turn, -1, 1));
             left_front.setPower(clip(movement_turn, -1, 1));
             left_back.setPower(clip(movement_turn, -1, 1));
+
+            BackGroundTaskCheck();
         }
 
+    }
+
+    public void BackGroundTaskCheck() {
+        if(putWobbleArmDown) {
+            wobbleArm.setPower(-0.45);
+            MoveWobbleArm();
+        }
+        if(putWobbleArmUp) {
+            wobbleArm.setPower(0.37);
+            MoveWobbleArm();
+        }
+        if(turnIntakeOnForward) {
+            intake.setPower(1);
+            turnIntakeOnForward = false;
+        }
+        if(turnIntakeOnBackward) {
+            intake.setPower(-1);
+            turnIntakeOnBackward = false;
+        } if(stopIntake) {
+            intake.setPower(0);
+            stopIntake = false;
+        }
+        if(runShooterControl) {
+            shooterStartTime = System.nanoTime();
+            shooterLastTime = System.nanoTime();
+            telemetry.addData("RUNNING CLOSED LOOP CONTROL", "");
+            ClosedLoopControl();
+        }
+        if(stopShooter) {
+            shooter.setPower(0);
+            runShooterControl = false;
+            stopShooter = false;
+        }
+        if(setPowerShotRPM) {
+            shooterTargetRPM = powerShotTargetRPM;
+            shooterCurrentPower = powerShotStartPower;
+            setPowerShotRPM = false;
+        }
+        if(setNormalRPM) {
+            shooterTargetRPM = normalTargetRPM;
+            shooterCurrentPower = shooterStartPower;
+            setNormalRPM = false;
+        }
     }
 
     private void CalculateMotorPowers(double movement_x, double movement_y, double movement_turn) {
@@ -478,6 +576,29 @@ public class RobotMovement extends LinearOpMode {
         right_back.setDirection(DcMotorSimple.Direction.REVERSE);
         left_back.setDirection(DcMotorSimple.Direction.REVERSE);
 
+
+        //Ultimate Goal Specific Hardware
+        //Shooter
+        shooter = hardwareMap.dcMotor.get("shooter");
+
+        //Intake
+        intake = hardwareMap.dcMotor.get("intake");
+
+        //For the Wobble Goal
+        wobbleClaw = hardwareMap.servo.get("wobble_claw");
+        wobbleArm = hardwareMap.dcMotor.get("wobble_arm");
+        wobbleTouch1 = hardwareMap.touchSensor.get("wobble_touch1");
+        wobbleTouch2 = hardwareMap.touchSensor.get("wobble_touch2");
+
+        //For the Flicker and Backplate
+        backPlate = hardwareMap.servo.get("backplate");
+        flicker = hardwareMap.servo.get("flicker");
+
+        shooter.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        shooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        wobbleArm.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
         telemetry.addData("Status", "Hardware Map Init Complete");
         telemetry.update();
     }
@@ -520,5 +641,61 @@ public class RobotMovement extends LinearOpMode {
         double b = point.y - (m*point.x);
 
         return new Line(m, b);
+    }
+
+    public void ClosedLoopControl() {
+        encoderPosition = shooter.getCurrentPosition();
+        shooterTotalRevolutions = encoderPosition / 28;
+        shooterRunTime = (System.nanoTime() - shooterStartTime) / TimeUnit.SECONDS.toNanos(1);
+
+        if(shooterRunTime - shooterLastTime > 0.05) {
+            //Get RPM
+
+            shooterRevolutionChange = shooterTotalRevolutions - shooterLastRevolutions;
+            shooterTimeChange = shooterRunTime - shooterLastTime;
+            shooterRPM = (shooterRevolutionChange / shooterTimeChange) * 60;
+
+            shooterLastRevolutions = shooterTotalRevolutions;
+            shooterLastTime += 0.05;
+
+            if(shooterRPM < shooterTargetRPM) {
+                shooterCurrentPower += 0.005;
+            } else if(shooterRPM > shooterTargetRPM) {
+                shooterCurrentPower -= 0.005;
+            }
+
+            if(shooterCurrentPower > 1) {
+                shooterCurrentPower = 1;
+            } else if(shooterCurrentPower < 0 ) {
+                shooterCurrentPower = 0;
+            }
+
+            shooter.setPower(shooterCurrentPower);
+        }
+
+        shooter.setPower(shooterCurrentPower);
+    }
+
+    public void MoveWobbleArm() {
+        boolean condition1 = wobbleTouch2.isPressed() && wobbleArm.getPower() > 0;
+        boolean condition2 = wobbleTouch1.isPressed() && wobbleArm.getPower() < 0;
+        if(condition1 || condition2) {
+            wobbleArm.setPower(0);
+            putWobbleArmDown = false;
+            putWobbleArmUp = false;
+        }
+    }
+
+    //Discrete Functions I need while Not Moving
+    void Flick() {
+        flickerStartTime = System.nanoTime();
+        flicker.setPosition(0);
+        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 0.5) {
+            sleep(10);
+        }
+        flicker.setPosition(1);
+        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 1) {
+            sleep(10);
+        }
     }
 }

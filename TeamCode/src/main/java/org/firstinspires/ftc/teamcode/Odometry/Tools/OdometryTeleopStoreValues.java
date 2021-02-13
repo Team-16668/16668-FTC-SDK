@@ -2,22 +2,24 @@ package org.firstinspires.ftc.teamcode.Odometry.Tools;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.Range;
+import com.qualcomm.robotcore.util.ReadWriteFile;
 
 import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 
+import java.io.File;
 
-@TeleOp(name="Odometry Teleop")
-public class OdometryTeleop extends LinearOpMode {
+@TeleOp(name="Odometry Teleop Store Values")
+public class OdometryTeleopStoreValues extends LinearOpMode {
     //Drive motors
     DcMotor right_front, right_back, left_front, left_back;
     //Odometry Wheels
@@ -35,6 +37,10 @@ public class OdometryTeleop extends LinearOpMode {
     String verticalLeftEncoderName = rbName, verticalRightEncoderName = lfName, horizontalEncoderName = rfName;
 
     GlobalCoordinatePosition globalPositionUpdate;
+
+    private File xPosFile = AppUtil.getInstance().getSettingsFile("xPos.txt");
+    private File yPosFile = AppUtil.getInstance().getSettingsFile("yPos.txt");
+    private File orientationFile = AppUtil.getInstance().getSettingsFile("orientation.txt");
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -68,6 +74,11 @@ public class OdometryTeleop extends LinearOpMode {
         positionThread.start();
 
         globalPositionUpdate.reverseRightEncoder();
+
+        double startXPos = Double.parseDouble(ReadWriteFile.readFile(xPosFile).trim());
+        double startYPos = Double.parseDouble(ReadWriteFile.readFile(yPosFile).trim());
+        double startOrientation = Double.parseDouble(ReadWriteFile.readFile(orientationFile).trim());
+
 
         waitForStart();
 
@@ -115,9 +126,9 @@ public class OdometryTeleop extends LinearOpMode {
             angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
 
 
-            telemetry.addData("X Position", globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH);
-            telemetry.addData("Y Position", -globalPositionUpdate.returnYCoordinate() / COUNTS_PER_INCH);
-            telemetry.addData("Orientation (Degrees)", MathFunctions.interpretAngle(globalPositionUpdate.returnOrientation()));
+            telemetry.addData("X Position", (globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH)+startXPos);
+            telemetry.addData("Y Position", (-globalPositionUpdate.returnYCoordinate() / COUNTS_PER_INCH)+startYPos);
+            telemetry.addData("Orientation (Degrees)", (MathFunctions.interpretAngle(globalPositionUpdate.returnOrientation())+startOrientation));
             telemetry.addData("horizontal", horizontal.getCurrentPosition());
             telemetry.addData("left", verticalLeft.getCurrentPosition());
             telemetry.addData("right", verticalRight.getCurrentPosition());

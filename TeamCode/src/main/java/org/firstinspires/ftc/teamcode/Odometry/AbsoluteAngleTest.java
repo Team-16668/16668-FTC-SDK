@@ -5,8 +5,8 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
 import org.firstinspires.ftc.teamcode.Odometry.Tools.GlobalCoordinatePosition;
 
-@Autonomous(name="Shooting Pos")
-public class ShootingPos extends RobotMovement {
+@Autonomous(name="Absolute Angle Test")
+public class AbsoluteAngleTest extends RobotMovement {
 
    @Override
     public void runOpMode() throws InterruptedException {
@@ -30,9 +30,8 @@ public class ShootingPos extends RobotMovement {
         double error = 2;
 
         if(opModeIsActive()) {
-            goToPosition(15.8, 55.7, 0.5, 0, error, 0.5);
-            turnToPosition(15.8, 100, 0.5);
-            
+            stayAtAbsoluteAngle(0, 100, 0.5, 0, 2, 0.5);
+
             sleep(200000);
         }
 

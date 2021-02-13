@@ -30,13 +30,16 @@ public class OdometryTest extends RobotMovement {
         double error = 2;
 
         if(opModeIsActive()) {
+            turnToPosition(0,24, 179, 0.3, 0.2, 30);
+            //goToPosition(0, -24, 0.5, 179, 2, 0.3);
+            /*
             goToPosition(0, 10, 0.5, 0, error, 0.5);
             turnAndGo(7, 95.5, 0.5, 0, error, 0.5, 0.5);
             turnAndGo(27, 73, 0.5, 0, error, 0.5, 0.5);
             turnToPositionNoStop(1000, 1000, 0.5);
             turnAndGo(29, 116, 0.5, 0, error, 0.5, 0.5);
             turnAndGo(0, 10, 0.5, 0, error, 0.5, 0.5);
-
+               */
             /*
             turnAndGo(12, 0, 0.5, 0, 2, 0.5, 0.3);
             turnAndGo(0, 12, 0.5, 0, 2, 0.5, 0.3);
