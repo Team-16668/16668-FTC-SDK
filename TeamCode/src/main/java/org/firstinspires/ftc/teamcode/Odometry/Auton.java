@@ -2,10 +2,6 @@ package org.firstinspires.ftc.teamcode.Odometry;
 
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ReadWriteFile;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -25,8 +21,6 @@ import org.openftc.easyopencv.OpenCvPipeline;
 import org.openftc.easyopencv.OpenCvWebcam;
 
 import java.io.File;
-
-import static java.lang.Math.toRadians;
 
 @Autonomous(name="Auton")
 public class Auton extends RobotMovement {
@@ -68,8 +62,6 @@ public class Auton extends RobotMovement {
             }
         });
 
-        initHardwareMap();
-
         telemetry.addData(" Status", " Waiting for Start");
         telemetry.update();
 
@@ -82,9 +74,6 @@ public class Auton extends RobotMovement {
         double error = 2;
 
         if(opModeIsActive()) {
-
-            setPowerShotRPM = true;
-            runShooterControl = true;
 
             telemetry.addData("Analysis", pipeline.getAnalysis());
             telemetry.addData("Position", pipeline.position);
@@ -101,28 +90,18 @@ public class Auton extends RobotMovement {
                 webcam.stopStreaming();
             }
 
-            goToPosition(0, 15, 1, 0, 5, 0.5);
-            goToPosition(-17, 49, 1, 0, 2, 0.5);
-            turnAndGo(-17, 59, 0.25, 0, 0.25, 0.25, 0.2);
-            //Shoot Powershots here
-            turnToPosition(-18, 100,0, 0.25, 0.15, 30);
-            Flick();
-            goToPosition(-11, 59,0.25, 90, 0.15, .25);
-            turnToPosition(-12, 62, 0, 0.25, 0.15, 30);
-            Flick();
-            goToPosition(-4, 59,0.25, 90, 0.15, .25);
-            turnToPosition(-5, 62, 0, 0.25, 0.15, 30);
-            Flick();
-
-            stopShooter = true;
-
-            putWobbleArmDown = true;
-
             if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
-                turnToPosition(-16, 75, 0, 0.3, 0.2, 30);
-                goToPosition(20, 77, 0.5, 179, 3, 0.3);
-                goToPosition(25, 79, 0.25, 179, 2, 0.3);
-                turnToPosition(30, 79, 179, 0.3, 0.2, 30);
+                setPowerShotRPM = true;
+                runShooterControl = true;
+
+                goToPosition(14, 56, 1, 0, 25, 0.5);
+                PowerShotCode();
+
+                putWobbleArmDown = true;
+                turnToPosition(-16, 56, 0, 1, 0.2, 30);
+                goToPosition(20, 75, 0.5, 179, 6, 0.3);
+                goToPosition(26, 80, 0.25, 179, 2, 0.3);
+                turnToPosition(30, 80, 179, 0.3, 0.2, 30);
                 //Release 1st Wobble
                 wobbleClaw.setPosition(0);
                 sleep(500);
@@ -136,18 +115,40 @@ public class Auton extends RobotMovement {
                 goToPosition(21, 60, 0.5, 0, 1, 0.3);
                 goToPosition(12, 51, 0.25, 179, 1, 0.3);
                 //Release 2nd Wobble here
-                goToPosition(5, 67, 1, 179, 2, 0.3);
 
             } else if (pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
-                turnToPosition(-25, 62, 0, 0.3, 0.2, 30);
-                goToPosition(-5, 92, 0.5, 179, 3, 0.3);
-                goToPosition(0, 92, 0.25, 179, 2, 0.3);
-                turnToPosition(30, 79, 179, 0.3, 0.2, 30);
+                setCustomRPM = true;
+                runShooterControl = true;
+
+                goToPositionWithoutTurn(10, 27, 0.5, 2);
+                turnToPosition(20, 100, 0, 0.25, 0.15, 30);
+                Flick();
+                Flick();
+                Flick();
+                backPlate.setPosition(1);
+                sleep(500);
+                turnIntakeOnForward = true;
+                goToPosition( 10, 40, 0.25, 0, 2, 0.3);
+                sleep(1750);
+                backPlate.setPosition(0);
+                stopIntake = true;
+                turnAndGo(14, 56, 0.5, 0, 5, 0.25, 0.2);
+                turnAndGo(14, 56, 0.25, 0, 0.25, 0.25, 0.2);
+                turnToPosition(0, 100, 0, 0.25, 0.15, 30);
+                Flick();
+
+                putWobbleArmDown = true;
+                runShooterControl = false;
+
+                turnToPosition(0, 0, 0, 1, 0.2, 30);
+                goToPosition(7, 83, 1, 179, 10, 0.3);
+                goToPosition(7, 85, 0.25, 179, 2, 0.3);
+                //turnToPosition(0, 79, 179, 0.3, 0.2, 30);
                 //Release 1st Wobble
                 wobbleClaw.setPosition(0);
                 sleep(500);
-                putWobbleArmUp = true;
-
+                //putWobbleArmUp = true;
+                /*
                 goToPosition(20, 81, 0.25, 0, 2, 0.3);
                 wobbleClaw.setPosition(1);
                 goToPosition(17, 24, 1, 0, 5, 0.3);
@@ -156,9 +157,10 @@ public class Auton extends RobotMovement {
                 goToPosition(21, 60, 0.5, 0, 1, 0.3);
                 goToPosition(12, 51, 0.25, 179, 1, 0.3);
                 //Release 2nd Wobble here
-                goToPosition(5, 67, 1, 179, 2, 0.3);
+                */
             }
 
+            goToPosition(10, 67, 1, 179, 2, 0.3);
 
             ReadWriteFile.writeFile(xPosFile, String.valueOf(globalPositionUpdate.returnXCoordinate()/COUNTS_PER_INCH));
             ReadWriteFile.writeFile(yPosFile, String.valueOf(-globalPositionUpdate.returnYCoordinate()/COUNTS_PER_INCH));
@@ -172,9 +174,18 @@ public class Auton extends RobotMovement {
 
     }
 
-    public void initHardwareMap() {
+    public void PowerShotCode() {
+        turnAndGo(14, 56, 0.125, 0, 0.25, 0.25, 0.2);
+        //Shoot Powershots here
+        turnToPosition(-10, 100,0, 0.25, 0.15, 30);
+        Flick();
+        turnToPosition(-15, 100, 0, 0.25, 0.15, 30);
+        Flick();
+        setNormalRPM = true;
+        turnToPosition(-18, 100, 0, 0.25, 0.15, 30);
+        Flick();
 
-
+        stopShooter = true;
     }
 
     public static class SkystoneDeterminationPipeline extends OpenCvPipeline

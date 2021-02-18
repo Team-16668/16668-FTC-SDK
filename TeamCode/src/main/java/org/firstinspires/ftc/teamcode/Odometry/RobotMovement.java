@@ -37,12 +37,12 @@ public class RobotMovement extends LinearOpMode {
             shooterRPM = 0,
             shooterRevolutionChange,
             shooterTimeChange,
-            normalTargetRPM = 4200,
-            powerShotTargetRPM = 3450,
-            powerShotStartPower = .82,
+            normalTargetRPM = 4300,
+            powerShotTargetRPM = 3500,
+            powerShotStartPower = .81,
             shooterTargetRPM = normalTargetRPM,
             shooterTotalRevolutions, shooterRunTime = 0,
-            shooterStartPower = .85,
+            shooterStartPower = .84,
             shooterCurrentPower = shooterStartPower;
 
     //Logic for the Flicker
@@ -61,6 +61,7 @@ public class RobotMovement extends LinearOpMode {
     boolean setPowerShotRPM = false;
     boolean setNormalRPM = false;
     boolean stopShooter = false;
+    boolean setCustomRPM = false;
 
 
     final double COUNTS_PER_INCH = 307.699557;
@@ -320,7 +321,7 @@ public class RobotMovement extends LinearOpMode {
         goToPosition(x, y, movementSpeed, preferredAngle, error, turnSpeed2);
     }
 
-    public void goToPositionWithoutTurn(double x, double y, double movementSpeed, double preferredAngle, double error) {
+    public void goToPositionWithoutTurn(double x, double y, double movementSpeed, double error) {
         distanceToTarget = Math.hypot(x-(globalPositionUpdate.returnXCoordinate()/COUNTS_PER_INCH), y-(-globalPositionUpdate.returnYCoordinate()/COUNTS_PER_INCH));
 
         while(opModeIsActive() && distanceToTarget > error) {
@@ -489,6 +490,11 @@ public class RobotMovement extends LinearOpMode {
             shooterTargetRPM = normalTargetRPM;
             shooterCurrentPower = shooterStartPower;
             setNormalRPM = false;
+        }
+        if(setCustomRPM) {
+            shooterTargetRPM = 4300;
+            shooterCurrentPower = 0.88;
+            setCustomRPM = false;
         }
     }
 
@@ -690,11 +696,11 @@ public class RobotMovement extends LinearOpMode {
     void Flick() {
         flickerStartTime = System.nanoTime();
         flicker.setPosition(0);
-        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 0.5) {
+        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 0.5 && opModeIsActive()) {
             sleep(10);
         }
         flicker.setPosition(1);
-        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 1) {
+        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 0.8 && opModeIsActive()) {
             sleep(10);
         }
     }
