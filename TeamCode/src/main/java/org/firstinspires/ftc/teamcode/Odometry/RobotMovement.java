@@ -26,7 +26,7 @@ public class RobotMovement extends LinearOpMode {
 
     //Ultimate Goal Specific Hardware
     DcMotor shooter, intake, wobbleArm;
-    Servo wobbleClaw, backPlate, flicker;
+    Servo wobbleClaw, backPlate, flicker, ringKnocker, wobbleLifter;
     TouchSensor wobbleTouch1, wobbleTouch2;
 
     //Logic for the Shooter
@@ -260,7 +260,15 @@ public class RobotMovement extends LinearOpMode {
         double yComponent = 0;
 
         double angle = orientation;
-
+        if(angle==0) {
+            angle=1;
+        } else if (angle == 90) {
+            angle=91;
+        } else if (angle == 180) {
+            angle = 179;
+        } else if (angle == -90) {
+            angle = -91;
+        }
         if(angle >= 0 && angle <= 90) {
             xComponent = 1000 * Math.sin(angle);
             yComponent = 1000 * Math.cos(angle);
@@ -590,8 +598,11 @@ public class RobotMovement extends LinearOpMode {
         //Intake
         intake = hardwareMap.dcMotor.get("intake");
 
+        ringKnocker = hardwareMap.servo.get("ring_knocker");
+
         //For the Wobble Goal
         wobbleClaw = hardwareMap.servo.get("wobble_claw");
+        wobbleLifter = hardwareMap.servo.get("wobble_lifter");
         wobbleArm = hardwareMap.dcMotor.get("wobble_arm");
         wobbleTouch1 = hardwareMap.touchSensor.get("wobble_touch1");
         wobbleTouch2 = hardwareMap.touchSensor.get("wobble_touch2");
@@ -696,11 +707,11 @@ public class RobotMovement extends LinearOpMode {
     void Flick() {
         flickerStartTime = System.nanoTime();
         flicker.setPosition(0);
-        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 0.5 && opModeIsActive()) {
+        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 1 && opModeIsActive()) {
             sleep(10);
         }
         flicker.setPosition(1);
-        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 0.8 && opModeIsActive()) {
+        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 2 && opModeIsActive()) {
             sleep(10);
         }
     }

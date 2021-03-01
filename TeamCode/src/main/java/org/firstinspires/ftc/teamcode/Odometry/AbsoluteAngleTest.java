@@ -30,7 +30,7 @@ public class AbsoluteAngleTest extends RobotMovement {
         double error = 2;
 
         if(opModeIsActive()) {
-            stayAtAbsoluteAngle(0, 100, 0.5, 0, 2, 0.5);
+            stayAtAbsoluteAngle(0, 100, 0.5, 45, 2, 0.5);
 
             sleep(200000);
         }

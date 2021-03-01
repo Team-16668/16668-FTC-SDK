@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 @TeleOp(name="Game TeleOp")
 public class GameTeleOp extends LinearOpMode {
     DcMotor rightFront, rightBack, leftFront, leftBack, shooter, intake, wobbleArm;
-    Servo wobbleClaw, backPlate, flicker;
+    Servo wobbleClaw, backPlate, flicker, wobbleLifter, ringKnocker;
     TouchSensor wobbleTouch1, wobbleTouch2;
 
     //Global Game State Variable
@@ -81,6 +81,9 @@ public class GameTeleOp extends LinearOpMode {
         backPlate.setPosition(1);
         flicker.setPosition(1);
 
+        wobbleLifter.setPosition(0.7);
+        ringKnocker.setPosition(0.5);
+
         waitForStart();
 
         shooterStartTime = System.nanoTime();
@@ -114,7 +117,8 @@ public class GameTeleOp extends LinearOpMode {
             }
 
 
-
+            telemetry.addData("changed", true);
+            telemetry.update();
         }
     }
 
@@ -304,10 +308,12 @@ public class GameTeleOp extends LinearOpMode {
 
         //Intake
         intake = hardwareMap.dcMotor.get("intake");
+        ringKnocker = hardwareMap.servo.get("ring_knocker");
 
         //For the Wobble Goal
         wobbleClaw = hardwareMap.servo.get("wobble_claw");
         wobbleArm = hardwareMap.dcMotor.get("wobble_arm");
+        wobbleLifter = hardwareMap.servo.get("wobble_lifter");
         wobbleTouch1 = hardwareMap.touchSensor.get("wobble_touch1");
         wobbleTouch2 = hardwareMap.touchSensor.get("wobble_touch2");
 

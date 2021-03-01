@@ -69,11 +69,17 @@ public class Auton extends RobotMovement {
         backPlate.setPosition(0);
         flicker.setPosition(1);
 
+        ringKnocker.setPosition(0.5);
+        wobbleLifter.setPosition(0.7);
+
         waitForStart();
 
         double error = 2;
 
         if(opModeIsActive()) {
+
+            ringKnocker.setPosition(1);
+            sleep(1000);
 
             telemetry.addData("Analysis", pipeline.getAnalysis());
             telemetry.addData("Position", pipeline.position);
@@ -90,12 +96,14 @@ public class Auton extends RobotMovement {
                 webcam.stopStreaming();
             }
 
-            if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
-                setPowerShotRPM = true;
-                runShooterControl = true;
+            InitialShots();
 
-                goToPosition(14, 56, 1, 0, 25, 0.5);
-                PowerShotCode();
+            if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
+                //setPowerShotRPM = true;
+                //runShooterControl = true;
+
+                //goToPosition(14, 56, 1, 0, 25, 0.5);
+                //PowerShotCode();
 
                 putWobbleArmDown = true;
                 turnToPosition(-16, 56, 0, 1, 0.2, 30);
@@ -117,33 +125,27 @@ public class Auton extends RobotMovement {
                 //Release 2nd Wobble here
 
             } else if (pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
-                setCustomRPM = true;
-                runShooterControl = true;
-
-                goToPositionWithoutTurn(10, 27, 0.5, 2);
-                turnToPosition(20, 100, 0, 0.25, 0.15, 30);
-                Flick();
-                Flick();
-                Flick();
-                backPlate.setPosition(1);
-                sleep(500);
+                ringKnocker.setPosition(0.5);
                 turnIntakeOnForward = true;
                 goToPosition( 10, 40, 0.25, 0, 2, 0.3);
                 sleep(1750);
                 backPlate.setPosition(0);
                 stopIntake = true;
-                turnAndGo(14, 56, 0.5, 0, 5, 0.25, 0.2);
+
+                setNormalRPM = true;
+                runShooterControl = true;
+                turnAndGo(14, 56, 0.5,0, 5, 0.25, 0.2);
                 turnAndGo(14, 56, 0.25, 0, 0.25, 0.25, 0.2);
-                turnToPosition(0, 100, 0, 0.25, 0.15, 30);
+                turnToPosition(14, 100, 0, 0.25, 0.15, 30);
+
                 Flick();
 
-                putWobbleArmDown = true;
                 runShooterControl = false;
 
                 turnToPosition(0, 0, 0, 1, 0.2, 30);
-                goToPosition(7, 83, 1, 179, 10, 0.3);
-                goToPosition(7, 85, 0.25, 179, 2, 0.3);
-                //turnToPosition(0, 79, 179, 0.3, 0.2, 30);
+                putWobbleArmDown = true;
+                goToPosition(7, 78, 1, 179, 10, 0.3);
+                goToPosition(7, 83, 0.25, 179, 2, 0.3);
                 //Release 1st Wobble
                 wobbleClaw.setPosition(0);
                 sleep(500);
@@ -172,6 +174,19 @@ public class Auton extends RobotMovement {
 
         globalPositionUpdate.stop();
 
+    }
+
+    private void InitialShots() {
+        setCustomRPM = true;
+        runShooterControl = true;
+
+        goToPositionWithoutTurn(10, 21, 0.5, 2);
+        turnToPosition(20, 100, 0, 0.25, 0.15, 30);
+        Flick();
+        Flick();
+        Flick();
+        backPlate.setPosition(1);
+        sleep(500);
     }
 
     public void PowerShotCode() {
