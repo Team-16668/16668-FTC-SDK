@@ -121,7 +121,7 @@ public class RobotMovement extends LinearOpMode {
     public void goToPosition(double x, double y, double movementSpeed, double preferredAngle, double error, double turnSpeed) {
         distanceToTarget = Math.hypot(x - (globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH), y - (-globalPositionUpdate.returnYCoordinate() / COUNTS_PER_INCH));
 
-        while (opModeIsActive() && distanceToTarget > error) {
+        while (opModeIsActive() && !isStopRequested() && distanceToTarget > error) {
             robotX = globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH;
             robotY = -globalPositionUpdate.returnYCoordinate() / COUNTS_PER_INCH;
             robotOrientation = toRadians(interpretAngle(globalPositionUpdate.returnOrientation()));
@@ -181,7 +181,7 @@ public class RobotMovement extends LinearOpMode {
 
         Line line = calculateLineFromAngle(robotX, robotY, preferredAbsoluteAngle);
 
-        while (opModeIsActive() && distanceToTarget > error) {
+        while (opModeIsActive() && !isStopRequested() && distanceToTarget > error) {
 
             robotX = globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH;
             robotY = -globalPositionUpdate.returnYCoordinate() / COUNTS_PER_INCH;
@@ -332,7 +332,7 @@ public class RobotMovement extends LinearOpMode {
     public void goToPositionWithoutTurn(double x, double y, double movementSpeed, double error) {
         distanceToTarget = Math.hypot(x-(globalPositionUpdate.returnXCoordinate()/COUNTS_PER_INCH), y-(-globalPositionUpdate.returnYCoordinate()/COUNTS_PER_INCH));
 
-        while(opModeIsActive() && distanceToTarget > error) {
+        while(opModeIsActive() && !isStopRequested() && distanceToTarget > error) {
             robotX = globalPositionUpdate.returnXCoordinate()/COUNTS_PER_INCH;
             robotY = -globalPositionUpdate.returnYCoordinate()/COUNTS_PER_INCH;
             robotOrientation = toRadians(interpretAngle(globalPositionUpdate.returnOrientation()));
@@ -383,7 +383,7 @@ public class RobotMovement extends LinearOpMode {
 
         movement_turn = clip(relativeTurnAngle / toRadians(scale), -1, 1) * turnSpeed;
 
-        while(opModeIsActive() && abs(movement_turn) > threshhold) {
+        while(opModeIsActive() && !isStopRequested() && abs(movement_turn) > threshhold) {
             telemetry.addData("loop finished", abs(movement_turn) > threshhold);
             telemetry.addData("moving", abs(movement_turn)-threshhold);
             telemetry.addData("threshold", threshhold);
@@ -430,7 +430,7 @@ public class RobotMovement extends LinearOpMode {
 
         movement_turn = clip(relativeTurnAngle/ toRadians(30), -1, 1) * turnSpeed;
 
-        while(opModeIsActive() && abs(movement_turn) > 0.25) {
+        while(opModeIsActive() && !isStopRequested() && abs(movement_turn) > 0.25) {
             robotX = globalPositionUpdate.returnXCoordinate()/COUNTS_PER_INCH;
             robotY = -globalPositionUpdate.returnYCoordinate()/COUNTS_PER_INCH;
             robotOrientation = toRadians(interpretAngle(globalPositionUpdate.returnOrientation()));
@@ -707,11 +707,11 @@ public class RobotMovement extends LinearOpMode {
     void Flick() {
         flickerStartTime = System.nanoTime();
         flicker.setPosition(0);
-        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 1 && opModeIsActive()) {
+        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 1 && opModeIsActive() && !isStopRequested()) {
             sleep(10);
         }
         flicker.setPosition(1);
-        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 2 && opModeIsActive()) {
+        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 2 && opModeIsActive() && !isStopRequested()) {
             sleep(10);
         }
     }

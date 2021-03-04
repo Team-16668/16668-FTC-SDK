@@ -70,7 +70,7 @@ public class Auton extends RobotMovement {
         flicker.setPosition(1);
 
         ringKnocker.setPosition(0.5);
-        wobbleLifter.setPosition(0.7);
+        wobbleLifter.setPosition(0.3);
 
         waitForStart();
 
@@ -125,41 +125,42 @@ public class Auton extends RobotMovement {
                 //Release 2nd Wobble here
 
             } else if (pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
+                setNormalRPM = true;
+
                 ringKnocker.setPosition(0.5);
                 turnIntakeOnForward = true;
                 goToPosition( 10, 40, 0.25, 0, 2, 0.3);
-                sleep(1750);
-                backPlate.setPosition(0);
-                stopIntake = true;
-
-                setNormalRPM = true;
-                runShooterControl = true;
-                turnAndGo(14, 56, 0.5,0, 5, 0.25, 0.2);
-                turnAndGo(14, 56, 0.25, 0, 0.25, 0.25, 0.2);
-                turnToPosition(14, 100, 0, 0.25, 0.15, 30);
-
-                Flick();
-
-                runShooterControl = false;
-
-                turnToPosition(0, 0, 0, 1, 0.2, 30);
                 putWobbleArmDown = true;
-                goToPosition(7, 78, 1, 179, 10, 0.3);
-                goToPosition(7, 83, 0.25, 179, 2, 0.3);
+                turnAndGo(14, 54, 0.5,0, 5, 0.25, 0.2);
+                sleep(5000);
+                stopIntake = true;
+                //sleep(1000);
+                //backPlate.setPosition(0);
+                //turnAndGo(14, 56, 0.25, 0, 0.5, 0.25, 0.2);
+                //turnToPosition(10, 100, 0, 0.25, 0.15, 30);
+
+                //Flick();
+
+                stopShooter = true;
+
+                turnToPosition(0, 0, 0, 0.7, 0.2, 30);
+                goToPosition(10, 80, 1, 179, 10, 0.3);
+                goToPosition(10, 87, 0.25, 179, 2, 0.3);
                 //Release 1st Wobble
                 wobbleClaw.setPosition(0);
-                sleep(500);
-                //putWobbleArmUp = true;
-                /*
-                goToPosition(20, 81, 0.25, 0, 2, 0.3);
+                sleep(750);
+
+                goToPosition(7, 78, 0.3, 179, 2, 0.3);
+                putWobbleArmUp = true;
                 wobbleClaw.setPosition(1);
-                goToPosition(17, 24, 1, 0, 5, 0.3);
-                //Pick up 2nd Wobble here
-                turnToPosition(21, 60, 0, 0.3, 0.2, 30);
-                goToPosition(21, 60, 0.5, 0, 1, 0.3);
-                goToPosition(12, 51, 0.25, 179, 1, 0.3);
-                //Release 2nd Wobble here
-                */
+
+                GetSecondWobble();
+
+                goToPosition(4, 87, 1, -90, 3, 0.5);
+                wobbleLifter.setPosition(0.8);
+                sleep(500);
+                goToPosition(6, 74, 0.25, -90, 2, 0.3);
+
             }
 
             goToPosition(10, 67, 1, 179, 2, 0.3);
@@ -174,6 +175,16 @@ public class Auton extends RobotMovement {
 
         globalPositionUpdate.stop();
 
+    }
+
+    private void GetSecondWobble() {
+       turnToPosition(17, 36, 90, 0.75, 0.3, 30);
+       wobbleLifter.setPosition(0.8);
+       goToPosition(17, 36, 1, 90, 5, 0.5);
+       turnToPosition(17, 0, 90, 0.3, 0.15, 30);
+       goToPosition(17, 20, 0.25, 90, 1, 0.1);
+       wobbleLifter.setPosition(0.6);
+       sleep(500);
     }
 
     private void InitialShots() {
