@@ -2,9 +2,11 @@ package org.firstinspires.ftc.teamcode.Odometry;
 
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.Odometry.Tools.GlobalCoordinatePosition;
 
+@Disabled
 @Autonomous(name="Absolute Angle Test")
 public class AbsoluteAngleTest extends RobotMovement {
 

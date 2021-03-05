@@ -15,9 +15,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
-
+@Disabled
 @TeleOp(name="Odometry Teleop")
-public class OdometryTeleop extends LinearOpMode {
+public class OdometryTeleOp extends LinearOpMode {
     //Drive motors
     DcMotor right_front, right_back, left_front, left_back;
     //Odometry Wheels

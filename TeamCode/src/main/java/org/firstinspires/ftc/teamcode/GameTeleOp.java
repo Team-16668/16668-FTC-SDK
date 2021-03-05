@@ -81,7 +81,7 @@ public class GameTeleOp extends LinearOpMode {
         backPlate.setPosition(1);
         flicker.setPosition(1);
 
-        wobbleLifter.setPosition(0.7);
+        wobbleLifter.setPosition(0.45);
         ringKnocker.setPosition(0.5);
 
         waitForStart();
@@ -115,10 +115,6 @@ public class GameTeleOp extends LinearOpMode {
             if(keepIntakeOn) {
                 IntakeTimer();
             }
-
-
-            telemetry.addData("changed", true);
-            telemetry.update();
         }
     }
 

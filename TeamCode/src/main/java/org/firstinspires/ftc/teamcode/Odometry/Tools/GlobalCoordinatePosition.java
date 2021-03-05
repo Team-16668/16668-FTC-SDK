@@ -26,6 +26,14 @@ public class GlobalCoordinatePosition implements Runnable{
     private double robotEncoderWheelDistance;
     private double horizontalEncoderTickPerDegreeOffset;
 
+    private double leftChange;
+    private double rightChange;
+
+    private double rawHorizontalChange;
+    private double horizontalChange;
+    private double p;
+    private double n;
+
     //Sleep time interval (milliseconds) for the position update thread
     private int sleepTime;
 
@@ -65,8 +73,9 @@ public class GlobalCoordinatePosition implements Runnable{
         verticalRightEncoderWheelPosition = (verticalEncoderRight.getCurrentPosition() * verticalRightEncoderPositionMultiplier);
 
         //Both are in counts
-        double leftChange = verticalLeftEncoderWheelPosition - previousVerticalLeftEncoderWheelPosition;
-        double rightChange = verticalRightEncoderWheelPosition - previousVerticalRightEncoderWheelPosition;
+        //I changed this to not have the double declaration here. Originally, these variables were defined specifically in the function.
+        leftChange = verticalLeftEncoderWheelPosition - previousVerticalLeftEncoderWheelPosition;
+        rightChange = verticalRightEncoderWheelPosition - previousVerticalRightEncoderWheelPosition;
 
         //Calculate Angle
         //changeInRobotOrientation = unitless
@@ -78,11 +87,12 @@ public class GlobalCoordinatePosition implements Runnable{
         //normalEncoderWheelPosition = counts
         normalEncoderWheelPosition = (horizontalEncoder.getCurrentPosition()*normalEncoderPositionMultiplier);
         //rawHorizontalChange = counts
-        double rawHorizontalChange = normalEncoderWheelPosition - prevNormalEncoderWheelPosition;
-        double horizontalChange = rawHorizontalChange - (changeInRobotOrientation*horizontalEncoderTickPerDegreeOffset);
+        //I also changed this through "n" to not be defined exclusively here.
+        rawHorizontalChange = normalEncoderWheelPosition - prevNormalEncoderWheelPosition;
+        horizontalChange = rawHorizontalChange - (changeInRobotOrientation*horizontalEncoderTickPerDegreeOffset);
 
-        double p = ((rightChange + leftChange) / 2);
-        double n = horizontalChange;
+        p = ((rightChange + leftChange) / 2);
+        n = horizontalChange;
 
         //Calculate and update the position values
         robotGlobalXCoordinatePosition = robotGlobalXCoordinatePosition + (p*Math.sin(robotOrientationRadians) + n*Math.cos(robotOrientationRadians));
@@ -110,6 +120,25 @@ public class GlobalCoordinatePosition implements Runnable{
      * @return global orientation, in degrees
      */
     public double returnOrientation(){ return Math.toDegrees(robotOrientationRadians) % 360; }
+
+    public void setZero() {
+        verticalLeftEncoderWheelPosition = 0;
+        verticalRightEncoderWheelPosition = 0;
+        leftChange = 0;
+        rightChange = 0;
+        changeInRobotOrientation = 0;
+        robotOrientationRadians = 0;
+        normalEncoderWheelPosition = 0;
+        rawHorizontalChange = 0;
+        horizontalChange = 0;
+        p = 0;
+        n = 0;
+        robotGlobalXCoordinatePosition = 0;
+        robotGlobalYCoordinatePosition = 0;
+        previousVerticalLeftEncoderWheelPosition = 0;
+        previousVerticalRightEncoderWheelPosition = 0;
+        prevNormalEncoderWheelPosition = 0;
+    }
 
     /**
      * Stops the position update thread

@@ -1,5 +1,6 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.RandomTools;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -7,8 +8,8 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import java.util.concurrent.TimeUnit;
 
+@Disabled
 @TeleOp(name="Closed Loop Control Test")
-
 public class ClosedLoopControl extends LinearOpMode {
     public DcMotor shooter;
 
