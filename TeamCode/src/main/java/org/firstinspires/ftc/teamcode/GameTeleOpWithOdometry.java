@@ -20,6 +20,16 @@ import static java.lang.Math.abs;
 import static java.lang.Math.toDegrees;
 import static java.lang.Math.toRadians;
 
+/**
+ * Created by Jacob on 3-4-21
+ */
+
+
+/* NOTE
+    If you ever need to read this without me here to tell you what it all means, just go through the code. You will see different
+    things with names like gamepad1 and gamepad2. Those have button inputs with the game controllers associated with them.
+    Run this OpMode and push all the buttons that you see to find out what they do. That should show you what most of the code does.
+ */
 
 @TeleOp(name="Game Teleop w/ Odometry")
 public class GameTeleOpWithOdometry extends LinearOpMode {
