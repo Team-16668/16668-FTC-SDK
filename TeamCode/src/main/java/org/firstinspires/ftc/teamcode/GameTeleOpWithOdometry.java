@@ -94,7 +94,7 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
 
     double distanceToTarget, robotX, robotY, robotOrientation, absoluteAngleToTarget, relativeAngleToTarget,
             relativeXToPoint, relativeYToPoint, movementXPower, movementYPower,
-            movement_x, movement_y, relativeTurnAngle, movement_turn;
+            movement_x, movement_y, movement_turn;
     double MovementPowerDenominator = abs(relativeXToPoint) + abs(relativeYToPoint);
     double leftFrontPower, rightFrontPower, rightBackPower, leftBackPower, lfAbs, rfAbs, rbAbs, lbAbs;
 
@@ -187,9 +187,9 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
             MotorCode();
         }else {
             if(distanceToTarget > 5) {
-                stayAtAbsoluteAngle(0, 0, 1, 0, 10, 0.5);
+                stayAtAbsoluteAngle(0, 0, 1, 10, 0.5);
             }else if(distanceToTarget > 0.25){
-                stayAtAbsoluteAngle(0, 0, 0.25, 0, 0.25, 0.25);
+                stayAtAbsoluteAngle(0, 0, 0.25, 0.25, 0.25);
             } else {
                 driveState = DriveState.Normal;
             }
@@ -210,7 +210,7 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
     }
 
     void SwitchToOdometry() {
-        stayAtAbsoluteAngle(0, 0, 1, 0, 5, 0.5);
+        stayAtAbsoluteAngle(0, 0, 1, 5, 0.5);
     }
 
     void ResetOdometry() {
@@ -324,7 +324,6 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
             firstReturn = true;
         }
     }
-
 
     void ChangeGameStateSubroutine() {
         gameCurrentButtonState = gamepad2.a;
@@ -484,13 +483,11 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
         rightBack.setPower(BackRight);
     }
 
-    public void stayAtAbsoluteAngle(double x, double y, double movementSpeed, double preferredAbsoluteAngle, double error, double turnSpeed) {
+    public void stayAtAbsoluteAngle(double x, double y, double movementSpeed, double error, double turnSpeed) {
         distanceToTarget = Math.hypot(x - (globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH), y - (-globalPositionUpdate.returnYCoordinate() / COUNTS_PER_INCH));
 
         robotX = globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH;
         robotY = -globalPositionUpdate.returnYCoordinate() / COUNTS_PER_INCH;
-
-        Line line = calculateLineFromAngle(robotX, robotY, preferredAbsoluteAngle);
 
         if(distanceToTarget > error) {
 
@@ -513,13 +510,7 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
             movement_x = movementXPower * movementSpeed;
             movement_y = movementYPower * movementSpeed;
 
-            Point currentPoint = new Point(robotX, robotY);
-
-            Line currentLine = perpendicularThroughPoint(line, currentPoint);
-
-            Point turnToPoint = Intersection(line, currentLine);
-
-            double turnToAbsoluteAngleToTarget = Math.atan2(turnToPoint.y - robotY, turnToPoint.x - robotX);
+            double turnToAbsoluteAngleToTarget = Math.atan2((robotY+10) - robotY, robotX - robotX);
             double turnToRelativeAngleToTarget = MathFunctions.AngleWrap(turnToAbsoluteAngleToTarget - (robotOrientation));
 
             double turnToRelativeTurnAngle = turnToRelativeAngleToTarget - toRadians(90);
@@ -528,22 +519,6 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
             if (distanceToTarget < 5) {
                 movement_turn = 0;
             }
-
-            telemetry.addData("Target Point X", turnToPoint.x);
-            telemetry.addData("Target Point Y", turnToPoint.y);
-
-            telemetry.addData("movement_x", movement_x);
-            telemetry.addData("movement_y", movement_y);
-            telemetry.addData("movement_turn", movement_turn);
-
-            telemetry.addData(" xpos", robotX);
-            //telemetry.addData("X Position", globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH);
-            telemetry.addData(" ypos", robotY);
-            telemetry.addData(" orientation", toDegrees(robotOrientation) + 90);
-            telemetry.addData(" orientation", toDegrees(robotOrientation));
-            telemetry.update();
-
-            movement_turn = 0;
 
             CalculateMotorPowers(movement_x, movement_y, movement_turn);
         }
@@ -593,35 +568,23 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
     }
 
     private enum GameState {
-        Shooting, Intake;
+        Shooting, Intake
     }
 
     private enum IntakeDirection {
-        In, Out;
+        In, Out
     }
 
     private enum ShooterState {
-        Normal, PowerShot;
+        Normal, PowerShot
     }
 
     private enum ClawState {
-        Open, Closed;
+        Open, Closed
     }
 
     private enum DriveState {
-        Normal, Odometry;
-    }
-
-    public Line LineFromTwoPoints(Point p1, Point p2) {
-        double slope = (p2.y-p1.y)/(p2.x-p1.y);
-        return new Line(slope, p1.y - (slope * p1.x));
-    }
-
-    public Line perpendicularThroughPoint(Line line, Point point) {
-        double m = -(1/line.m);
-        double b = point.y - (m*point.x);
-
-        return new Line(m, b);
+        Normal, Odometry
     }
 
     public double interpretAngle(double Orientation) {
@@ -643,13 +606,6 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
         } else {
             return true;
         }
-    }
-
-    public void StopMotors() {
-        rightFront.setPower(0);
-        rightBack.setPower(0);
-        leftFront.setPower(0);
-        leftBack.setPower(0);
     }
 
     private void CalculateMotorPowers(double movement_x, double movement_y, double movement_turn) {
@@ -695,75 +651,5 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
         rightBack.setPower(rightBackPower);
         leftFront.setPower(leftFrontPower);
         leftBack.setPower(leftBackPower);
-    }
-
-    public Point Intersection(Line line1, Line line2) {
-        double xIntersection = (line2.b - line1.b) / (line1.m-line2.m);
-        double yIntersection = (line1.m*xIntersection) + line1.b;
-
-        return new Point(xIntersection, yIntersection);
-    }
-
-    public Line calculateLineFromAngle(double robotPosX, double robotPosY, double orientation) {
-        Point startingPoint = new Point(robotPosX, robotPosY);
-
-        Point targetPoint = castPoint(orientation, startingPoint);
-
-        Line line = LineFromTwoPoints(startingPoint, targetPoint);
-
-        Line perpendicularLine = perpendicularThroughPoint(line, targetPoint);
-
-        return perpendicularLine;
-    }
-
-    public Point castPoint(double orientation, Point startingPoint) {
-        Point targetPoint = new Point(0, 0);
-        double xComponent = 0;
-        double yComponent = 0;
-
-        double angle = orientation;
-        if(angle==0) {
-            angle=1;
-        } else if (angle == 90) {
-            angle=91;
-        } else if (angle == 180) {
-            angle = 179;
-        } else if (angle == -90) {
-            angle = -91;
-        }
-        if(angle >= 0 && angle <= 90) {
-            xComponent = 1000 * Math.sin(angle);
-            yComponent = 1000 * Math.cos(angle);
-
-            targetPoint.x = xComponent + startingPoint.x;
-            targetPoint.y = yComponent + startingPoint.y;
-        } else if(angle >=90 && angle <= 180) {
-            angle -= 90;
-
-            xComponent = 1000 * Math.cos(angle);
-            yComponent = 1000 * Math.sin(angle);
-
-            targetPoint.x = xComponent + startingPoint.x;
-            targetPoint.y = yComponent + startingPoint.y;
-        }else if (angle <= 0 && angle >= -90) {
-            angle *= -1;
-
-            xComponent = 1000 * Math.sin(angle);
-            yComponent = 1000 * Math.cos(angle);
-
-            targetPoint.x = -xComponent + startingPoint.x;
-            targetPoint.y = -yComponent + startingPoint.y;
-        }else if (angle <= -90 && angle >= -180) {
-            angle += 90;
-
-            xComponent = 1000 * Math.cos(angle);
-            yComponent = 1000 * Math.sin(angle);
-
-            targetPoint.x = -xComponent + startingPoint.x;
-            targetPoint.y = -yComponent + startingPoint.y;
-        }
-
-        //Point startingPoint = new Point(robotPosX, robotPosY);
-        return targetPoint;
     }
 }
