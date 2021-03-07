@@ -35,7 +35,7 @@ import static java.lang.Math.toRadians;
 public class GameTeleOpWithOdometry extends LinearOpMode {
     DcMotor rightFront, rightBack, leftFront, leftBack, shooter, intake, wobbleArm;
     DcMotor verticalLeft, verticalRight, horizontal;
-    Servo wobbleClaw, backPlate, flicker, wobbleLifter, ringKnocker;
+    Servo wobbleClaw, wobbleClaw2, backPlate, flicker, wobbleLifter, ringKnocker;
     TouchSensor wobbleTouch1, wobbleTouch2;
 
     //Global Game State Variable
@@ -75,8 +75,8 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
             shooterRevolutionChange,
             shooterTimeChange,
             normalTargetRPM = 4200,
-            powerShotTargetRPM = 3500,
-            powerShotStartPower = .82,
+            powerShotTargetRPM = 3400,
+            powerShotStartPower = .80,
             shooterTargetRPM = normalTargetRPM,
             shooterTotalRevolutions, shooterRunTime = 0,
             shooterStartPower = .85,
@@ -119,12 +119,13 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
 
         //Open Wobble Claw
         wobbleClaw.setPosition(1);
+        wobbleClaw2.setPosition(1);
 
         backPlate.setPosition(1);
         flicker.setPosition(1);
 
-        wobbleLifter.setPosition(0.49);
-        ringKnocker.setPosition(0.5);
+        wobbleLifter.setPosition(0.65);
+        ringKnocker.setPosition(0);
 
         waitForStart();
 
@@ -367,13 +368,17 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
         //Claw Toggle
         currentClawButtonState = gamepad2.x;
         if(currentClawButtonState && currentClawButtonState != prevClawButtonState) {
-            if(clawState == ClawState.Open)
+            if(clawState == ClawState.Open) {
                 clawState = ClawState.Closed;
-            else
+                wobbleClaw.setPosition(1);
+                wobbleClaw2.setPosition(1);
+            }else {
                 clawState = ClawState.Open;
+                wobbleClaw.setPosition(0);
+                wobbleClaw2.setPosition(0);
+            }
         }
         prevClawButtonState = currentClawButtonState;
-        Claw();
 
         //Wobble Arm Code
         rightTrigger = gamepad2.right_trigger;
@@ -384,9 +389,9 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
             wobblePower = 0;
         }
         else if(leftTrigger!= 0) {
-            wobblePower = 0.37;
+            wobblePower = 0.55;
         } else if (rightTrigger != 0) {
-            wobblePower = -0.45;
+            wobblePower = -0.55;
         } else {
             wobblePower = 0;
         }
@@ -395,16 +400,11 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
             wobblePower = 0;
         } else if (wobbleTouch2.isPressed() && wobblePower > 0) {
             wobblePower = 0;
+            wobbleClaw.setPosition(1);
+            wobbleClaw2.setPosition(1);
         }
 
         wobbleArm.setPower(wobblePower);
-    }
-
-    private void Claw() {
-        if(clawState== ClawState.Open)
-            wobbleClaw.setPosition(0);
-        else
-            wobbleClaw.setPosition(1);
     }
 
     private void DefineHardwareMap() {
@@ -423,6 +423,7 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
 
         //For the Wobble Goal
         wobbleClaw = hardwareMap.servo.get("wobble_claw");
+        wobbleClaw2 = hardwareMap.servo.get("wobble_claw2");
         wobbleArm = hardwareMap.dcMotor.get("wobble_arm");
         wobbleLifter = hardwareMap.servo.get("wobble_lifter");
         wobbleTouch1 = hardwareMap.touchSensor.get("wobble_touch1");

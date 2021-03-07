@@ -26,7 +26,7 @@ public class RobotMovement extends LinearOpMode {
 
     //Ultimate Goal Specific Hardware
     DcMotor shooter, intake, wobbleArm;
-    Servo wobbleClaw, backPlate, flicker, ringKnocker, wobbleLifter;
+    Servo wobbleClaw, wobbleClaw2, backPlate, flicker, ringKnocker, wobbleLifter;
     TouchSensor wobbleTouch1, wobbleTouch2;
 
     //Logic for the Shooter
@@ -501,7 +501,7 @@ public class RobotMovement extends LinearOpMode {
         }
         if(setCustomRPM) {
             shooterTargetRPM = 4300;
-            shooterCurrentPower = 0.88;
+            shooterCurrentPower = 0.9;
             setCustomRPM = false;
         }
     }
@@ -602,6 +602,7 @@ public class RobotMovement extends LinearOpMode {
 
         //For the Wobble Goal
         wobbleClaw = hardwareMap.servo.get("wobble_claw");
+        wobbleClaw2 = hardwareMap.servo.get("wobble_claw2");
         wobbleLifter = hardwareMap.servo.get("wobble_lifter");
         wobbleArm = hardwareMap.dcMotor.get("wobble_arm");
         wobbleTouch1 = hardwareMap.touchSensor.get("wobble_touch1");
@@ -707,11 +708,11 @@ public class RobotMovement extends LinearOpMode {
     void Flick() {
         flickerStartTime = System.nanoTime();
         flicker.setPosition(0);
-        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 1 && opModeIsActive() && !isStopRequested()) {
+        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 0.5 && opModeIsActive() && !isStopRequested()) {
             sleep(10);
         }
         flicker.setPosition(1);
-        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 2 && opModeIsActive() && !isStopRequested()) {
+        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 1 && opModeIsActive() && !isStopRequested()) {
             sleep(10);
         }
     }
