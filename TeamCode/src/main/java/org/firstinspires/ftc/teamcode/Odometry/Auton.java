@@ -118,25 +118,32 @@ public class Auton extends RobotMovement {
                 sleep(500);
                 putWobbleArmUp = true;
 
+                //Get the second wobble
+                GetSecondWobble();
+
+                /*
                 goToPosition(20, 81, 0.25, 0, 2, 0.3);
                 wobbleClaw.setPosition(1);
                 wobbleClaw2.setPosition(1);
                 goToPosition(17, 24, 1, 0, 5, 0.3);
                 //Pick up 2nd Wobble here
+                 */
                 turnToPosition(21, 60, 0, 0.3, 0.2, 30);
                 goToPosition(21, 60, 0.5, 0, 1, 0.3);
                 goToPosition(12, 51, 0.25, 179, 1, 0.3);
                 //Release 2nd Wobble here
 
+                goToPosition(10, 67, 1, 179, 2, 0.3);
+
             } else if (pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
                 setNormalRPM = true;
 
-                ringKnocker.setPosition(0);
                 turnIntakeOnForward = true;
                 goToPosition( 10, 40, 0.25, 0, 2, 0.3);
                 putWobbleArmDown = true;
-                stopIntake = true;
                 turnAndGo(14, 54, 0.5,0, 5, 0.25, 0.2);
+                stopIntake = true;
+                ringKnocker.setPosition(0);
                 //sleep(1000);
                 //backPlate.setPosition(0);
                 //turnAndGo(14, 56, 0.25, 0, 0.5, 0.25, 0.2);
@@ -146,36 +153,41 @@ public class Auton extends RobotMovement {
 
                 stopShooter = true;
 
-                turnToPosition(0, 0, 0, 0.7, 0.2, 30);
+                turnToPosition(0, 0, 0, 1, 0.2, 30);
                 goToPosition(10, 80, 1, 179, 10, 0.3);
-                goToPosition(10, 87, 0.25, 179, 2, 0.3);
+                goToPosition(9, 88, 0.25, 179, 2, 0.3);
                 //Release 1st Wobble
                 wobbleClaw.setPosition(0);
                 wobbleClaw2.setPosition(0);
                 sleep(750);
 
-                goToPosition(12, 78, 0.3, 179, 2, 0.3);
+                goToPosition(10, 78, 0.3, 179, 2, 0.3);
                 wobbleClaw.setPosition(1);
                 wobbleClaw2.setPosition(1);
 
                 GetSecondWobble();
+
+                //Turn Towards the second wobble position.
+                turnToPositionNoStop(100, 100, 0.5);
                 turnToPosition(-4, 100, 0, 0.5, 0.3, 30);
-                goToPosition(-8, 78, 1,0, 5, 0.5);
-                goToPosition(-8, 78, 0.5,0, 2, 0.5);
+
+                goToPosition(-11, 85, 1,0, 10, 0.5);
+                goToPosition(-11, 90, 0.25,0, 2, 0.5);
+                turnToPosition(-8, 115, 0, 0.5, 0.15,15);
                 wobbleLifter.setPosition(0.9);
                 sleep(500);
-                goToPosition(-20, 82, 0.25, -90, 2, 0.3);
+                goToPosition(-22, 100 , 0.3, -90, 2, 0.3);
                 wobbleLifter.setPosition(0.65);
                 putWobbleArmUp = true;
+                goToPosition(-20, 69, 1, 179, 2, 0.3);
             }
 
-            goToPosition(10, 67, 1, 179, 2, 0.3);
+            StopMotors();
+
 
             ReadWriteFile.writeFile(xPosFile, String.valueOf(globalPositionUpdate.returnXCoordinate()/COUNTS_PER_INCH));
             ReadWriteFile.writeFile(yPosFile, String.valueOf(-globalPositionUpdate.returnYCoordinate()/COUNTS_PER_INCH));
             ReadWriteFile.writeFile(orientationFile, String.valueOf(interpretAngle(globalPositionUpdate.returnOrientation())));
-
-            sleep(200000);
         }
 
 
@@ -185,10 +197,10 @@ public class Auton extends RobotMovement {
 
     private void GetSecondWobble() {
        turnToPosition(17, 36, 90, 0.75, 0.3, 30);
-       wobbleLifter.setPosition(0.85);
-       goToPosition(17, 36, 1, 90, 5, 0.5);
-       turnToPosition(18, 0, 90, 0.3, 0.15, 30);
-       goToPosition(18, 20, 0.25, 90, 1, 0.1);
+       wobbleLifter.setPosition(0.89);
+       goToPosition(18, 40, 1, 90, 5, 0.5);
+       turnToPosition(18.5, 0, 90, 0.3, 0.15, 30);
+       goToPosition(18.5, 20, 0.25, 90, 1, 0.1);
        wobbleLifter.setPosition(0.75);
        sleep(500);
     }

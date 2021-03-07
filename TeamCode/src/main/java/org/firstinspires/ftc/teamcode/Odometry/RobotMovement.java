@@ -6,12 +6,15 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
+import com.qualcomm.robotcore.util.ReadWriteFile;
 
+import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 import org.firstinspires.ftc.teamcode.Odometry.Tools.GlobalCoordinatePosition;
 import org.firstinspires.ftc.teamcode.Odometry.Tools.Line;
 import org.firstinspires.ftc.teamcode.Odometry.Tools.MathFunctions;
 import org.firstinspires.ftc.teamcode.Odometry.Tools.Point;
 
+import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import static com.qualcomm.robotcore.util.Range.*;
@@ -19,6 +22,10 @@ import static java.lang.Math.*;
 
 @Autonomous(name="Robot Movement")
 public class RobotMovement extends LinearOpMode {
+    //File for Motor Speed
+    File powerFile = AppUtil.getInstance().getSettingsFile("custom-power.txt");
+    double customPower = Double.parseDouble(ReadWriteFile.readFile(powerFile).trim());
+
     //Drive motors
     DcMotor right_front, right_back, left_front, left_back;
     //Odometry Wheels
@@ -481,7 +488,7 @@ public class RobotMovement extends LinearOpMode {
         if(runShooterControl) {
             shooterStartTime = System.nanoTime();
             shooterLastTime = System.nanoTime();
-            telemetry.addData("RUNNING CLOSED LOOP CONTROL", "");
+            telemetry.addData("Shooter Speed", shooterCurrentPower);
             ClosedLoopControl();
         }
         if(stopShooter) {
@@ -501,7 +508,8 @@ public class RobotMovement extends LinearOpMode {
         }
         if(setCustomRPM) {
             shooterTargetRPM = 4300;
-            shooterCurrentPower = 0.9;
+            shooterCurrentPower = 0.92;
+            shooterCurrentPower = customPower;
             setCustomRPM = false;
         }
     }
