@@ -144,12 +144,14 @@ public class Auton extends RobotMovement {
                 turnAndGo(14, 54, 0.5,0, 5, 0.25, 0.2);
                 stopIntake = true;
                 ringKnocker.setPosition(0);
-                //sleep(1000);
-                //backPlate.setPosition(0);
-                //turnAndGo(14, 56, 0.25, 0, 0.5, 0.25, 0.2);
+                //This is what you get rid of to take out the shot.
+                sleep(1000);
+                backPlate.setPosition(0);
+                turnAndGo(14, 56, 0.25, 0, 0.5, 0.25, 0.2);
                 //turnToPosition(10, 100, 0, 0.25, 0.15, 30);
 
-                //Flick();
+                Flick();
+                //This is where getting rid of ends
 
                 stopShooter = true;
 
