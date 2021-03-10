@@ -101,39 +101,34 @@ public class Auton extends RobotMovement {
             InitialShots();
 
             if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
-                //setPowerShotRPM = true;
-                //runShooterControl = true;
-
-                //goToPosition(14, 56, 1, 0, 25, 0.5);
-                //PowerShotCode();
-
+                goToPosition(10, 40, 0.5, 0, 5, 0.3);
+                ringKnocker.setPosition(0);
                 putWobbleArmDown = true;
                 turnToPosition(-16, 56, 0, 1, 0.2, 30);
                 goToPosition(20, 75, 0.5, 179, 6, 0.3);
-                goToPosition(26, 80, 0.25, 179, 2, 0.3);
-                turnToPosition(30, 80, 179, 0.3, 0.2, 30);
+                goToPosition(26, 77, 0.25, 179, 2, 0.3);
+                turnToPosition(30, 79, 179, 0.3, 0.2, 30);
+
                 //Release 1st Wobble
                 wobbleClaw.setPosition(0);
                 wobbleClaw2.setPosition(0);
                 sleep(500);
+                goToPosition(21, 80, 0.5, 179, 2, 0.3);
                 putWobbleArmUp = true;
 
                 //Get the second wobble
                 GetSecondWobble();
 
-                /*
-                goToPosition(20, 81, 0.25, 0, 2, 0.3);
-                wobbleClaw.setPosition(1);
-                wobbleClaw2.setPosition(1);
-                goToPosition(17, 24, 1, 0, 5, 0.3);
-                //Pick up 2nd Wobble here
-                 */
-                turnToPosition(21, 60, 0, 0.3, 0.2, 30);
-                goToPosition(21, 60, 0.5, 0, 1, 0.3);
-                goToPosition(12, 51, 0.25, 179, 1, 0.3);
+                turnToPositionNoStop(100, 100, 0.6);
+
+                turnToPosition(10, 70, 0, 0.3, 0.2, 30);
+                goToPosition(10, 70, 0.5, 0, 2, 0.3);
+                turnToPosition(10, 79, 0, 0.3, 0.15, 30);
+                wobbleLifter.setPosition(0.89);
+                goToPosition(0, 76, 0.5, -90, 2, 0.3);
                 //Release 2nd Wobble here
 
-                goToPosition(10, 67, 1, 179, 2, 0.3);
+                goToPosition(5, 67, 1, 179, 2, 0.3);
 
             } else if (pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
                 setNormalRPM = true;
@@ -201,8 +196,10 @@ public class Auton extends RobotMovement {
 
     private void GetSecondWobble() {
        turnToPosition(17.5, 36, 90, 0.75, 0.3, 30);
-       wobbleLifter.setPosition(0.89);
-       goToPosition(18, 40, 1, 90, 5, 0.5);
+       wobbleLifter.setPosition(0.85);
+       goToPosition(18, 45, 1, 90, 5, 0.5);
+       //Get rid of this line if needed
+       goToPosition(18, 40, 0.25, 90, 5, 0.5);
        turnToPosition(18.75, 0, 90, 0.3, 0.15, 30);
        goToPosition(18.5, 20, 0.25, 90, 1, 0.1);
        wobbleLifter.setPosition(0.75);
@@ -214,7 +211,7 @@ public class Auton extends RobotMovement {
         runShooterControl = true;
 
         goToPositionWithoutTurn(10, 21, 0.5, 2);
-        turnToPosition(20, 100, 0, 0.25, 0.15, 30);
+        turnToPosition(20, 75, 0, 0.25, 0.15, 30);
         Flick();
         Flick();
         Flick();

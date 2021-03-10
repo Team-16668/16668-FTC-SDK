@@ -1,5 +1,6 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.RandomTools;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -14,6 +15,7 @@ import java.sql.Time;
 import java.util.concurrent.TimeUnit;
 
 @TeleOp(name="Game TeleOp")
+@Disabled
 public class GameTeleOp extends LinearOpMode {
     DcMotor rightFront, rightBack, leftFront, leftBack, shooter, intake, wobbleArm;
     Servo wobbleClaw, backPlate, flicker, wobbleLifter, ringKnocker;

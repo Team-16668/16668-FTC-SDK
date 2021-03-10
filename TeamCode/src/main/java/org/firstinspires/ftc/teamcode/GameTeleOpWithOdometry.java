@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -9,15 +10,12 @@ import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.teamcode.Odometry.Tools.GlobalCoordinatePosition;
-import org.firstinspires.ftc.teamcode.Odometry.Tools.Line;
 import org.firstinspires.ftc.teamcode.Odometry.Tools.MathFunctions;
-import org.firstinspires.ftc.teamcode.Odometry.Tools.Point;
 
 import java.util.concurrent.TimeUnit;
 
 import static com.qualcomm.robotcore.util.Range.clip;
 import static java.lang.Math.abs;
-import static java.lang.Math.toDegrees;
 import static java.lang.Math.toRadians;
 
 /**
@@ -33,6 +31,7 @@ import static java.lang.Math.toRadians;
 
 @TeleOp(name="Game Teleop w/ Odometry")
 public class GameTeleOpWithOdometry extends LinearOpMode {
+    RevBlinkinLedDriver lights;
     DcMotor rightFront, rightBack, leftFront, leftBack, shooter, intake, wobbleArm;
     DcMotor verticalLeft, verticalRight, horizontal;
     Servo wobbleClaw, wobbleClaw2, backPlate, flicker, wobbleLifter, ringKnocker;
@@ -116,6 +115,8 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
         DefineHardwareMap();
 
         SetMotorDirectionAndMode();
+
+        lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
 
         //Open Wobble Claw
         wobbleClaw.setPosition(1);
@@ -253,10 +254,12 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
                 shooterState = ShooterState.PowerShot;
                 shooterCurrentPower = powerShotStartPower;
                 shooterTargetRPM = powerShotTargetRPM;
+                lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.YELLOW);
             } else {
                 shooterState = ShooterState.Normal;
                 shooterCurrentPower = shooterStartPower;
                 shooterTargetRPM = normalTargetRPM;
+                lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
             }
         }
         powerShotPrevButton = powerShotCurrentButton;
@@ -432,6 +435,9 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
         //For the Flicker and Backplate
         backPlate = hardwareMap.servo.get("backplate");
         flicker = hardwareMap.servo.get("flicker");
+
+        lights = hardwareMap.get(RevBlinkinLedDriver.class, "lights");
+
     }
 
     private void SetMotorDirectionAndMode() {
