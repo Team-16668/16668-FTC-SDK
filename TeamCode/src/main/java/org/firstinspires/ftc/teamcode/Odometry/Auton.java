@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.Odometry;
 
 
+import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ReadWriteFile;
 
@@ -74,6 +75,21 @@ public class Auton extends RobotMovement {
         wobbleLifter.setPosition(0.65);
         //wobbleLifter.setPosition(0.8);
 
+        while(!opModeIsActive()) {
+            if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
+                lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.RED);
+                lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.RED);
+            }else if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
+                lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
+                lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
+            }else if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.FOUR) {
+                lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
+                lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
+            }
+
+            sleep(50);
+        }
+
         waitForStart();
 
         double error = 2;
@@ -90,12 +106,18 @@ public class Auton extends RobotMovement {
             if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
                 //Zero Rings
                 webcam.stopStreaming();
+                lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.RED);
+                lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.RED);
             } else if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
                 //One Ring
                 webcam.stopStreaming();
+                lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
+                lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
             } else if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.FOUR) {
                 //Four Rings
                 webcam.stopStreaming();
+                lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
+                lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
             }
 
             InitialShots();
@@ -114,7 +136,6 @@ public class Auton extends RobotMovement {
                 wobbleClaw2.setPosition(0);
                 sleep(500);
                 goToPosition(21, 80, 0.5, 179, 2, 0.3);
-                putWobbleArmUp = true;
 
                 //Get the second wobble
                 GetSecondWobble();
@@ -177,8 +198,31 @@ public class Auton extends RobotMovement {
                 sleep(500);
                 goToPosition(-21, 100 , 0.3, -90, 2, 0.3);
                 wobbleLifter.setPosition(0.65);
-                putWobbleArmUp = true;
-                goToPosition(-20, 70, 1, 179, 2, 0.3);
+                goToPosition(-20, 75, 1, 179, 2, 0.3);
+            } else {
+                turnIntakeOnForward = true;
+                goToPosition(10, 56, 0.3, 0, 5, 0.3);
+                ringKnocker.setPosition(0);
+                stopIntake = true;
+                stopShooter = true;
+
+                putWobbleArmDown = true;
+                turnToPosition(0, 0, 0, 1, 0.25, 30);
+
+                goToPosition(26, 110, 1, 179, 5, 0.3);
+                goToPosition(26, 110, 0.25, 179, 1, 0.3);
+
+                wobbleClaw.setPosition(0);
+                wobbleClaw2.setPosition(0);
+
+                sleep(750);
+
+                goToPosition(20, 110, 0.5, 179, 3, 0.3);
+                wobbleClaw.setPosition(1);
+                wobbleClaw2.setPosition(1);
+
+                GetSecondWobble();
+
             }
 
             StopMotors();
@@ -211,7 +255,7 @@ public class Auton extends RobotMovement {
         runShooterControl = true;
 
         goToPositionWithoutTurn(10, 21, 0.5, 2);
-        turnToPosition(20, 75, 0, 0.25, 0.15, 30);
+        turnToPosition(23, 75, 0, 0.25, 0.15, 30);
         Flick();
         Flick();
         Flick();

@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.Odometry;
 
+import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -35,6 +36,7 @@ public class RobotMovement extends LinearOpMode {
     DcMotor shooter, intake, wobbleArm;
     Servo wobbleClaw, wobbleClaw2, backPlate, flicker, ringKnocker, wobbleLifter;
     TouchSensor wobbleTouch1, wobbleTouch2;
+    RevBlinkinLedDriver lights, lights2;
 
     //Logic for the Shooter
     double shooterStartTime,
@@ -509,7 +511,6 @@ public class RobotMovement extends LinearOpMode {
         if(setCustomRPM) {
             shooterTargetRPM = 4200;
             shooterCurrentPower = customPower;
-            shooterCurrentPower = 0.88;
             setCustomRPM = false;
         }
     }
@@ -619,6 +620,9 @@ public class RobotMovement extends LinearOpMode {
         //For the Flicker and Backplate
         backPlate = hardwareMap.servo.get("backplate");
         flicker = hardwareMap.servo.get("flicker");
+
+        lights = hardwareMap.get(RevBlinkinLedDriver.class, "lights");
+        lights2 = hardwareMap.get(RevBlinkinLedDriver.class, "lights2");
 
         shooter.setDirection(DcMotorSimple.Direction.REVERSE);
 

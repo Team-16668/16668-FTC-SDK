@@ -24,7 +24,7 @@ public class ClosedLoopControlCalibration extends LinearOpMode {
         double targetRPM = 4300;
         double totalRevolutions;
         double runTime = 0;
-        double currentPower = 0.9;
+        double currentPower = 0.88;
 
         shooter = hardwareMap.dcMotor.get("shooter");
 

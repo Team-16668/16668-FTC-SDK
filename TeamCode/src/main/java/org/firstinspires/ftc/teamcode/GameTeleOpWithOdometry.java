@@ -31,7 +31,7 @@ import static java.lang.Math.toRadians;
 
 @TeleOp(name="Game Teleop w/ Odometry")
 public class GameTeleOpWithOdometry extends LinearOpMode {
-    RevBlinkinLedDriver lights;
+    RevBlinkinLedDriver lights, lights2;
     DcMotor rightFront, rightBack, leftFront, leftBack, shooter, intake, wobbleArm;
     DcMotor verticalLeft, verticalRight, horizontal;
     Servo wobbleClaw, wobbleClaw2, backPlate, flicker, wobbleLifter, ringKnocker;
@@ -91,6 +91,9 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
     double leftTrigger, rightTrigger, wobblePower;
     ClawState clawState = ClawState.Closed;
 
+    //Logic for putting the arm back at the beginning of the TeleOp
+    boolean wobblePressed = false;
+
     double distanceToTarget, robotX, robotY, robotOrientation, absoluteAngleToTarget, relativeAngleToTarget,
             relativeXToPoint, relativeYToPoint, movementXPower, movementYPower,
             movement_x, movement_y, movement_turn;
@@ -116,7 +119,8 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
 
         SetMotorDirectionAndMode();
 
-        lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
+        lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
+        lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
 
         //Open Wobble Claw
         wobbleClaw.setPosition(1);
@@ -147,7 +151,18 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
 
         waitForStart();
 
+        wobblePower = 0.55;
+
         while(opModeIsActive()) {
+
+            //Initial putting the wobble goal up thing
+            if(!wobblePressed) {
+                wobblePressed = wobbleTouch2.isPressed();
+                if(wobblePressed) {
+                    wobblePower = 0;
+                }
+            }
+
             //Do all functions to run the motors at the right speeds
             DriveStateRoutine();
 
@@ -259,7 +274,7 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
                 shooterState = ShooterState.Normal;
                 shooterCurrentPower = shooterStartPower;
                 shooterTargetRPM = normalTargetRPM;
-                lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
+                lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
             }
         }
         powerShotPrevButton = powerShotCurrentButton;
@@ -272,9 +287,11 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
             if (intakeDirection == IntakeDirection.In) {
                 intake.setPower(-1);
                 intakeDirection = IntakeDirection.Out;
+                lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.RED);
             } else if (intakeDirection == IntakeDirection.Out) {
                 intake.setPower(1);
                 intakeDirection = IntakeDirection.In;
+                lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
             }
         }
         intakePrevButtonState = intakeCurrentButtonState;
@@ -335,8 +352,10 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
         if(gameCurrentButtonState != gamePrevButtonState && gameCurrentButtonState)
             if(gameState == GameState.Intake) {
                 SwitchToShooting();
+                lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.WHITE);
             }else {
                 SwitchToIntake();
+                lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
             }
         gamePrevButtonState = gameCurrentButtonState;
     }
@@ -388,14 +407,14 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
         leftTrigger = gamepad2.left_trigger;
 
 
-        if(leftTrigger != 0 && rightTrigger != 0) {
+        if(leftTrigger != 0 && rightTrigger != 0 && wobblePressed) {
             wobblePower = 0;
         }
         else if(leftTrigger!= 0) {
             wobblePower = 0.55;
         } else if (rightTrigger != 0) {
             wobblePower = -0.55;
-        } else {
+        } else if(wobblePressed){
             wobblePower = 0;
         }
 
@@ -437,6 +456,7 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
         flicker = hardwareMap.servo.get("flicker");
 
         lights = hardwareMap.get(RevBlinkinLedDriver.class, "lights");
+        lights2 = hardwareMap.get(RevBlinkinLedDriver.class, "lights2");
 
     }
 
