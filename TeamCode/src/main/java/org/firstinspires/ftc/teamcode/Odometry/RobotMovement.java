@@ -509,7 +509,7 @@ public class RobotMovement extends LinearOpMode {
             setNormalRPM = false;
         }
         if(setCustomRPM) {
-            shooterTargetRPM = 4200;
+            shooterTargetRPM = 4350;
             shooterCurrentPower = customPower;
             setCustomRPM = false;
         }

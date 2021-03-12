@@ -129,7 +129,7 @@ public class GameTeleOpWithOdometry extends LinearOpMode {
         backPlate.setPosition(1);
         flicker.setPosition(1);
 
-        wobbleLifter.setPosition(0.65);
+        wobbleLifter.setPosition(0.66);
         ringKnocker.setPosition(0);
 
         waitForStart();

@@ -21,10 +21,10 @@ public class ClosedLoopControlCalibration extends LinearOpMode {
     File powerFile = AppUtil.getInstance().getSettingsFile("custom-power.txt");
 
     public void runOpMode() throws InterruptedException {
-        double targetRPM = 4300;
+        double targetRPM = 4350;
         double totalRevolutions;
         double runTime = 0;
-        double currentPower = 0.88;
+        double currentPower = 0.86;
 
         shooter = hardwareMap.dcMotor.get("shooter");
 
