@@ -143,14 +143,14 @@ public class Auton extends RobotMovement {
                 turnToPositionNoStop(100, 100, 0.6);
 
                 turnToPosition(10, 70, 0, 0.3, 0.2, 30);
-                goToPosition(10, 70, 0.5, 0, 2, 0.3);
-                turnToPosition(10, 79, 0, 0.3, 0.15, 30);
+                goToPosition(13, 70, 0.5, 0, 2, 0.3);
+                turnToPosition(13, 79, 0, 0.3, 0.15, 30);
                 wobbleLifter.setPosition(0.89);
                 sleep(750);
 
                 StrafeFromWobble();
 
-                goToPosition(5, 67, 1, 179, 2, 0.3);
+                goToPosition(-10, 67, 1, 179, 2, 0.3);
 
             } else if (pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
                 //setNormalRPM = true;
@@ -205,29 +205,64 @@ public class Auton extends RobotMovement {
                 wobbleLifter.setPosition(0.65);
                 goToPosition(-20, 75, 0.75, 179, 4, 0.3);
             } else {
+                shooterTargetRPM = 4400;
                 turnIntakeOnForward = true;
-                goToPosition(10, 56, 0.3, 0, 5, 0.3);
+                goToPositionWithoutTurn(9, 32, 0.3, 2);
+                sleep(2000);
+                backPlate.setPosition(0);
+                sleep(500);
+                Flick();
+                backPlate.setPosition(1);
+
+                goToPosition(10, 64, 0.3, 0, 5, 0.3);
                 ringKnocker.setPosition(0);
-                stopIntake = true;
                 stopShooter = true;
 
                 putWobbleArmDown = true;
                 turnToPosition(0, 0, 0, 1, 0.25, 30);
+                stopIntake = true;
 
-                goToPosition(26, 110, 1, 179, 5, 0.3);
-                goToPosition(26, 110, 0.25, 179, 1, 0.3);
+
+                goToPosition(26, 95, 1, 179, 5, 0.3);
+                goToPosition(30, 110, 0.25, 179, 1, 0.3);
 
                 wobbleClaw.setPosition(0);
                 wobbleClaw2.setPosition(0);
 
                 sleep(750);
 
-                goToPosition(20, 110, 0.5, 179, 3, 0.3);
+                right_front.setPower(1);
+                right_back.setPower(1);
+                left_front.setPower(-1);
+                left_back.setPower(-1);
+                sleep(1000);
+
                 wobbleClaw.setPosition(1);
                 wobbleClaw2.setPosition(1);
 
-                GetSecondWobble();
+                //This is where I get the second wobble. There appears to be some error in the odometry wheels, which makes this one differet.
 
+                turnToPosition(19, 36, 90, 0.75, 0.3, 30);
+                wobbleLifter.setPosition(0.85);
+                goToPosition(21, 45, 1, 90, 5, 0.5);
+                //Get rid of this line if needed
+                goToPosition(21, 40, 0.25, 90, 5, 0.5);
+                turnToPosition(22.52, 0, 90, 0.3, 0.15, 30);
+                goToPosition(22.5, 20, 0.45, 90, 1, 0.1);
+                wobbleLifter.setPosition(0.75);
+                sleep(500);
+
+                turnToPositionNoStop(100, 100, 1);
+
+                goToPosition(18, 95, 1, 0, 5, 0.5);
+                goToPosition(18, 112, 0.3, 0, 1, 0.3);
+
+                wobbleLifter.setPosition(0.89);
+                sleep(750);
+
+                StrafeFromWobble();
+
+                goToPosition(10, 80, 1, 179, 5, 0.3);
             }
 
             StopMotors();
@@ -257,7 +292,7 @@ public class Auton extends RobotMovement {
        goToPosition(18, 45, 1, 90, 5, 0.5);
        //Get rid of this line if needed
        goToPosition(18, 40, 0.25, 90, 5, 0.5);
-       turnToPosition(18.75, 0, 90, 0.3, 0.15, 30);
+       turnToPosition(19.25, 0, 90, 0.3, 0.15, 30);
        goToPosition(18.5, 25, 0.45, 90, 1, 0.1);
        wobbleLifter.setPosition(0.75);
        sleep(500);
@@ -268,7 +303,7 @@ public class Auton extends RobotMovement {
         runShooterControl = true;
 
         goToPositionWithoutTurn(12, 21, 0.5, 2);
-        turnToPosition(23, 75, 0, 0.25, 0.15, 30);
+        turnToPosition(30, 75, 0, 0.25, 0.15, 30);
         Flick();
         Flick();
         Flick();
