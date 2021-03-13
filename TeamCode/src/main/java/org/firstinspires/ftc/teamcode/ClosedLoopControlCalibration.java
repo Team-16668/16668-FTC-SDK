@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ReadWriteFile;
 
@@ -16,7 +17,7 @@ import java.lang.Math;
 
 @TeleOp(name="Closed Loop Control Calibration")
 public class ClosedLoopControlCalibration extends LinearOpMode {
-    public DcMotor shooter;
+    public DcMotorEx shooter;
 
     double targetRPM = 4350;
     double totalRevolutions;
@@ -39,7 +40,7 @@ public class ClosedLoopControlCalibration extends LinearOpMode {
     public void runOpMode() throws InterruptedException {
 
 
-        shooter = hardwareMap.dcMotor.get("shooter");
+        shooter = hardwareMap.get(DcMotorEx.class, "shooter");
 
         shooter.setDirection(DcMotorSimple.Direction.REVERSE);
 
@@ -106,13 +107,20 @@ public class ClosedLoopControlCalibration extends LinearOpMode {
                 }
             }
 
-            shooter.setPower(currentPower);
+            //shooter.setPower(currentPower);
+            shooter.setVelocity(2000);
 
+            /*
             for(int i=0; i<LastRPM.length; i++) {
                 telemetry.addData("Array index " + i, LastRPM[i]);
             }
+
+             */
             telemetry.addData("Last Average", lastRevolutions);
             telemetry.addData("Revolution Change", revolutionChange);
+
+            telemetry.addData("Velocity", shooter.getVelocity());
+            telemetry.addData("Shooter Velocity in RPM", (shooter.getVelocity()/28)*60);
 
             telemetry.addData("Power", currentPower);
             telemetry.addData("Revolutions", totalRevolutions);
@@ -155,6 +163,7 @@ public class ClosedLoopControlCalibration extends LinearOpMode {
         shooter.setPower(currentPower);
 
         telemetry.addData("Power", currentPower);
+
         telemetry.addData("Revolutions", totalRevolutions);
         telemetry.addData("Runtime (Sec)", runTime);
         telemetry.addData("RPM", RPM);

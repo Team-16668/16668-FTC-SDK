@@ -4,10 +4,10 @@ import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
-import com.qualcomm.robotcore.util.ReadWriteFile;
 
 import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 import org.firstinspires.ftc.teamcode.Odometry.Tools.GlobalCoordinatePosition;
@@ -23,42 +23,25 @@ import static java.lang.Math.*;
 
 @Autonomous(name="Robot Movement")
 public class RobotMovement extends LinearOpMode {
-    //File for Motor Speed
-    File powerFile = AppUtil.getInstance().getSettingsFile("custom-power.txt");
-    double customPower = Double.parseDouble(ReadWriteFile.readFile(powerFile).trim());
-
     //Drive motors
     DcMotor right_front, right_back, left_front, left_back;
     //Odometry Wheels
     DcMotor verticalLeft, verticalRight, horizontal;
 
     //Ultimate Goal Specific Hardware
-    DcMotor shooter, intake, wobbleArm;
+    DcMotor intake, wobbleArm;
+    DcMotorEx shooter;
     Servo wobbleClaw, wobbleClaw2, backPlate, flicker, ringKnocker, wobbleLifter;
     TouchSensor wobbleTouch1, wobbleTouch2;
     RevBlinkinLedDriver lights, lights2;
 
     //Logic for the Shooter
-    double shooterStartTime,
-            encoderPosition,
-            shooterLastTime = 0,
-            shooterLastRevolutions = 0,
-            shooterRPM = 0,
-            shooterRevolutionChange,
-            shooterTimeChange,
-            normalTargetRPM = 4300,
+    double   normalTargetRPM = 4300,
             powerShotTargetRPM = 3500,
-            powerShotStartPower = .81,
-            shooterTargetRPM = normalTargetRPM,
-            shooterTotalRevolutions, shooterRunTime = 0,
-            shooterStartPower = .84,
-            shooterCurrentPower = shooterStartPower;
+            shooterTargetRPM = normalTargetRPM;
 
     //Logic for the Flicker
-    double flickerStartTime,
-            timeSinceFlicker;
-    boolean firstReturn = true,
-            tryFLick = false;
+    double flickerStartTime;
 
     //Background Task Variables
     boolean putWobbleArmDown = false;
@@ -258,9 +241,7 @@ public class RobotMovement extends LinearOpMode {
 
         Line line = LineFromTwoPoints(startingPoint, targetPoint);
 
-        Line perpendicularLine = perpendicularThroughPoint(line, targetPoint);
-
-        return perpendicularLine;
+        return perpendicularThroughPoint(line, targetPoint);
     }
 
     public Point castPoint(double orientation, Point startingPoint) {
@@ -488,29 +469,24 @@ public class RobotMovement extends LinearOpMode {
             stopIntake = false;
         }
         if(runShooterControl) {
-            shooterStartTime = System.nanoTime();
-            shooterLastTime = System.nanoTime();
-            telemetry.addData("Shooter Speed", shooterCurrentPower);
-            ClosedLoopControl();
+            shooter.setVelocity((shooterTargetRPM*28)/60);
+            telemetry.addData("Shooter Speed", (shooter.getVelocity()/28)*60);
+            runShooterControl = false;
         }
         if(stopShooter) {
-            shooter.setPower(0);
-            runShooterControl = false;
+            shooter.setVelocity(0);
             stopShooter = false;
         }
         if(setPowerShotRPM) {
             shooterTargetRPM = powerShotTargetRPM;
-            shooterCurrentPower = powerShotStartPower;
             setPowerShotRPM = false;
         }
         if(setNormalRPM) {
             shooterTargetRPM = normalTargetRPM;
-            shooterCurrentPower = shooterStartPower;
             setNormalRPM = false;
         }
         if(setCustomRPM) {
-            shooterTargetRPM = 4350;
-            shooterCurrentPower = customPower;
+            shooterTargetRPM = 4050;
             setCustomRPM = false;
         }
     }
@@ -602,7 +578,7 @@ public class RobotMovement extends LinearOpMode {
 
         //Ultimate Goal Specific Hardware
         //Shooter
-        shooter = hardwareMap.dcMotor.get("shooter");
+        shooter = hardwareMap.get(DcMotorEx.class, "shooter");
 
         //Intake
         intake = hardwareMap.dcMotor.get("intake");
@@ -644,8 +620,7 @@ public class RobotMovement extends LinearOpMode {
         if(isWithin(Orientation, -180, 0)) {
             return Orientation;
         } else if (isWithin(Orientation, -360, -180)) {
-            double newOrientation = (Orientation +360);
-            return newOrientation;
+            return (Orientation +360);
         } else {
             return Orientation;
         }
@@ -671,39 +646,6 @@ public class RobotMovement extends LinearOpMode {
         double b = point.y - (m*point.x);
 
         return new Line(m, b);
-    }
-
-    public void ClosedLoopControl() {
-        encoderPosition = shooter.getCurrentPosition();
-        shooterTotalRevolutions = encoderPosition / 28;
-        shooterRunTime = (System.nanoTime() - shooterStartTime) / TimeUnit.SECONDS.toNanos(1);
-
-        if(shooterRunTime - shooterLastTime > 0.05) {
-            //Get RPM
-
-            shooterRevolutionChange = shooterTotalRevolutions - shooterLastRevolutions;
-            shooterTimeChange = shooterRunTime - shooterLastTime;
-            shooterRPM = (shooterRevolutionChange / shooterTimeChange) * 60;
-
-            shooterLastRevolutions = shooterTotalRevolutions;
-            shooterLastTime += 0.05;
-
-            if(shooterRPM < shooterTargetRPM) {
-                shooterCurrentPower += 0.005;
-            } else if(shooterRPM > shooterTargetRPM) {
-                shooterCurrentPower -= 0.005;
-            }
-
-            if(shooterCurrentPower > 1) {
-                shooterCurrentPower = 1;
-            } else if(shooterCurrentPower < 0 ) {
-                shooterCurrentPower = 0;
-            }
-
-            shooter.setPower(shooterCurrentPower);
-        }
-
-        shooter.setPower(shooterCurrentPower);
     }
 
     public void MoveWobbleArm() {

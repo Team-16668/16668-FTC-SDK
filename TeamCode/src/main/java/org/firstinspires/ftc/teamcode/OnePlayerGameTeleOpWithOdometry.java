@@ -4,6 +4,7 @@ import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
@@ -32,7 +33,8 @@ import static java.lang.Math.toRadians;
 @TeleOp(name="One Player Game Teleop w/ Odometry")
 public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
     RevBlinkinLedDriver lights, lights2;
-    DcMotor rightFront, rightBack, leftFront, leftBack, shooter, intake, wobbleArm;
+    DcMotor rightFront, rightBack, leftFront, leftBack, intake, wobbleArm;
+    DcMotorEx shooter;
     DcMotor verticalLeft, verticalRight, horizontal;
     Servo wobbleClaw, wobbleClaw2, backPlate, flicker, wobbleLifter, ringKnocker;
     TouchSensor wobbleTouch1, wobbleTouch2;
@@ -68,18 +70,9 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
 
     //Logic for Shooter
     double shooterStartTime,
-            shooterLastTime = 0,
-            shooterLastRevolutions = 0,
-            shooterRPM = 0,
-            shooterRevolutionChange,
-            shooterTimeChange,
-            normalTargetRPM = 4200,
+            normalTargetRPM = 4400,
             powerShotTargetRPM = 3000,
-            powerShotStartPower = .79,
-            shooterTargetRPM = normalTargetRPM,
-            shooterTotalRevolutions, shooterRunTime = 0,
-            shooterStartPower = .85,
-            shooterCurrentPower = shooterStartPower;
+            shooterTargetRPM = normalTargetRPM;
 
     //Logic for Power Shots
     ShooterState shooterState = ShooterState.Normal;
@@ -90,6 +83,9 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
     boolean currentClawButtonState, prevClawButtonState = false;
     double leftTrigger, rightTrigger, wobblePower;
     ClawState clawState = ClawState.Closed;
+
+    //Logic for the Wobble State Machine.
+    //There will still be an optional button to open or close the claw manually, but it will be primarily automatic
 
     //Logic for putting the arm back at the beginning of the TeleOp
     boolean wobblePressed = false;
@@ -173,7 +169,8 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
             ChangeGameStateSubroutine();
 
             if(gameState == GameState.Shooting) {
-                Shooting();
+                //Shooting();
+                shooter.setVelocity((shooterTargetRPM*28)/60);
             } else {
                 Intake();
             }
@@ -267,12 +264,12 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
         if(powerShotCurrentButton && powerShotCurrentButton != powerShotPrevButton) {
             if(shooterState == ShooterState.Normal) {
                 shooterState = ShooterState.PowerShot;
-                shooterCurrentPower = powerShotStartPower;
+                //shooterCurrentPower = powerShotStartPower;
                 shooterTargetRPM = powerShotTargetRPM;
                 lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.YELLOW);
             } else {
                 shooterState = ShooterState.Normal;
-                shooterCurrentPower = shooterStartPower;
+                //shooterCurrentPower = shooterStartPower;
                 shooterTargetRPM = normalTargetRPM;
                 lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
             }
@@ -297,6 +294,7 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
         intakePrevButtonState = intakeCurrentButtonState;
     }
 
+    /*
     void Shooting() {
         double encoderPosition = shooter.getCurrentPosition();
         shooterTotalRevolutions = encoderPosition / 28;
@@ -324,11 +322,14 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
                 shooterCurrentPower = 0;
             }
 
-            shooter.setPower(shooterCurrentPower);
+            //shooter.setPower(shooterCurrentPower);
+            shooter.setVelocity((shooterTargetRPM*28)/60);
         }
 
-        shooter.setPower(shooterCurrentPower);
+        //shooter.setPower(shooterCurrentPower);
+        shooter.setVelocity((shooterTargetRPM*28)/60);
     }
+     */
 
     void Flick() {
         timeSinceFlicker = (System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1);
@@ -375,6 +376,7 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
         backPlate.setPosition(0);
 
         gameState = GameState.Shooting;
+        shooter.setVelocity((shooterTargetRPM*28)/60);
 
         intake.setPower(0);
 
@@ -437,7 +439,7 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
         leftBack = hardwareMap.dcMotor.get("left_back");
 
         //Shooter
-        shooter = hardwareMap.dcMotor.get("shooter");
+        shooter = hardwareMap.get(DcMotorEx.class, "shooter");
 
         //Intake
         intake = hardwareMap.dcMotor.get("intake");
@@ -612,6 +614,10 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
 
     private enum DriveState {
         Normal, Odometry
+    }
+
+    private enum WobbleState {
+        DownOpen, VerticalClosed, DownishOpen
     }
 
     public double interpretAngle(double Orientation) {
