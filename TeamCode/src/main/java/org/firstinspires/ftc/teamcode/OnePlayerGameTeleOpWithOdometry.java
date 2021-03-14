@@ -71,7 +71,7 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
     //Logic for Shooter
     double shooterStartTime,
             normalTargetRPM = 4400,
-            powerShotTargetRPM = 3000,
+            powerShotTargetRPM = 3800,
             shooterTargetRPM = normalTargetRPM;
 
     //Logic for Power Shots
@@ -86,9 +86,14 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
 
     //Logic for the Wobble State Machine.
     //There will still be an optional button to open or close the claw manually, but it will be primarily automatic
+    WobbleState wobbleState = WobbleState.Initial;
+    double wobblePowerToUse = 0.75;
 
     //Logic for putting the arm back at the beginning of the TeleOp
     boolean wobblePressed = false;
+    boolean currentWobbleMachineState, prevWobbleMachineState;
+    int step = 1;
+    double wobbleTimerStartTime = 0, timeSinceWobbleStart = 0;
 
     double distanceToTarget, robotX, robotY, robotOrientation, absoluteAngleToTarget, relativeAngleToTarget,
             relativeXToPoint, relativeYToPoint, movementXPower, movementYPower,
@@ -147,7 +152,8 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
 
         waitForStart();
 
-        wobblePower = 0.55;
+        wobbleArm.setPower(wobblePowerToUse);
+
 
         while(opModeIsActive()) {
 
@@ -155,7 +161,11 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
             if(!wobblePressed) {
                 wobblePressed = wobbleTouch2.isPressed();
                 if(wobblePressed) {
-                    wobblePower = 0;
+                    wobbleArm.setPower(0);
+                    wobbleClaw.setPosition(1);
+                    wobbleClaw2.setPosition(1);
+                    wobbleArm.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    wobbleArm.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                 }
             }
 
@@ -164,6 +174,7 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
 
             //Claw and Wobble Arm Code
             WobbleSubroutine();
+            WobbleStateSubroutine();
 
             //Shooting to Intake Subroutine
             ChangeGameStateSubroutine();
@@ -240,6 +251,9 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
     }
 
     void Telemetry() {
+        telemetry.addData("wobble counts", wobbleArm.getCurrentPosition());
+        telemetry.addData("wobble mode", wobbleState);
+        telemetry.addData("step", step);
         telemetry.addData("shooter mode", shooterState);
         telemetry.addData("X Position", globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH);
         telemetry.addData("Y Position", -globalPositionUpdate.returnYCoordinate() / COUNTS_PER_INCH);
@@ -264,12 +278,10 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
         if(powerShotCurrentButton && powerShotCurrentButton != powerShotPrevButton) {
             if(shooterState == ShooterState.Normal) {
                 shooterState = ShooterState.PowerShot;
-                //shooterCurrentPower = powerShotStartPower;
                 shooterTargetRPM = powerShotTargetRPM;
                 lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.YELLOW);
             } else {
                 shooterState = ShooterState.Normal;
-                //shooterCurrentPower = shooterStartPower;
                 shooterTargetRPM = normalTargetRPM;
                 lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
             }
@@ -293,43 +305,6 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
         }
         intakePrevButtonState = intakeCurrentButtonState;
     }
-
-    /*
-    void Shooting() {
-        double encoderPosition = shooter.getCurrentPosition();
-        shooterTotalRevolutions = encoderPosition / 28;
-        shooterRunTime = (System.nanoTime() - shooterStartTime) / TimeUnit.SECONDS.toNanos(1);
-
-        if(shooterRunTime - shooterLastTime > 0.05) {
-            //Get RPM
-
-            shooterRevolutionChange = shooterTotalRevolutions - shooterLastRevolutions;
-            shooterTimeChange = shooterRunTime - shooterLastTime;
-            shooterRPM = (shooterRevolutionChange / shooterTimeChange) * 60;
-
-            shooterLastRevolutions = shooterTotalRevolutions;
-            shooterLastTime += 0.05;
-
-            if(shooterRPM < shooterTargetRPM) {
-                shooterCurrentPower += 0.005;
-            } else if(shooterRPM > shooterTargetRPM) {
-                shooterCurrentPower -= 0.005;
-            }
-
-            if(shooterCurrentPower > 1) {
-                shooterCurrentPower = 1;
-            } else if(shooterCurrentPower < 0 ) {
-                shooterCurrentPower = 0;
-            }
-
-            //shooter.setPower(shooterCurrentPower);
-            shooter.setVelocity((shooterTargetRPM*28)/60);
-        }
-
-        //shooter.setPower(shooterCurrentPower);
-        shooter.setVelocity((shooterTargetRPM*28)/60);
-    }
-     */
 
     void Flick() {
         timeSinceFlicker = (System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1);
@@ -387,10 +362,81 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
         intakeStartTime = System.nanoTime();
     }
 
+    private void WobbleStateSubroutine() {
+        currentWobbleMachineState = gamepad1.x;
+
+        if(currentWobbleMachineState && currentWobbleMachineState != prevWobbleMachineState) {
+            if(wobbleState == WobbleState.Initial) {
+                wobbleState = WobbleState.DownOpen;
+                wobbleArm.setPower(-wobblePowerToUse);
+                wobbleClaw.setPosition(0);
+                wobbleClaw2.setPosition(0);
+            } else if (wobbleState == WobbleState.DownOpen) {
+                wobbleState = WobbleState.VerticalClosed;
+                step = 1;
+            } else if (wobbleState == WobbleState.VerticalClosed) {
+                wobbleState = WobbleState.DropWobble;
+                wobbleArm.setPower(-wobblePowerToUse);
+                step = 1;
+            } else if (wobbleState == WobbleState.DropWobble) {
+                wobbleState = wobbleState.DownOpen;
+                wobbleArm.setPower(-wobblePowerToUse);
+                wobbleClaw.setPosition(0);
+                wobbleClaw2.setPosition(0);
+            }
+        }
+
+        prevWobbleMachineState = currentWobbleMachineState;
+
+        if(wobbleState == WobbleState.Initial) {
+            //Do nothing
+        } else if (wobbleState == WobbleState.DownOpen) {
+            if(wobbleTouch1.isPressed()) {
+                wobbleArm.setPower(0);
+            }
+        } else if (wobbleState == WobbleState.VerticalClosed) {
+            if(step==1) {
+                wobbleClaw.setPosition(1);
+                wobbleClaw2.setPosition(1);
+
+                wobbleTimerStartTime = System.nanoTime();
+
+                step = 2;
+            } else if (step==2) {
+                timeSinceWobbleStart = (System.nanoTime() - wobbleTimerStartTime) / TimeUnit.SECONDS.toNanos(1);
+                if(timeSinceWobbleStart >= 0.5) {
+                    wobbleArm.setPower(wobblePowerToUse);
+                    step = 3;
+                }
+            } else if (step==3) {
+                if(wobbleArm.getCurrentPosition() >= -800) {
+                    wobbleArm.setPower(0);
+                }
+            }
+        } else if (wobbleState == WobbleState.DropWobble) {
+            if(step ==1) {
+                if(wobbleArm.getCurrentPosition() <= -1300) {
+                    wobbleArm.setPower(0);
+
+                    wobbleClaw.setPosition(0);
+                    wobbleClaw2.setPosition(0);
+                    wobbleTimerStartTime = System.nanoTime();
+
+                    step = 2;
+                }
+            } else if (step == 2) {
+                timeSinceWobbleStart = (System.nanoTime() - wobbleTimerStartTime) / TimeUnit.SECONDS.toNanos(1);
+                if(timeSinceWobbleStart >= 1) {
+                }
+            }
+
+        }
+    }
+
     private void WobbleSubroutine() {
 
         //Claw Toggle
-        currentClawButtonState = gamepad1.x;
+        currentClawButtonState = gamepad1.right_trigger != 0;
         if(currentClawButtonState && currentClawButtonState != prevClawButtonState) {
             if(clawState == ClawState.Open) {
                 clawState = ClawState.Closed;
@@ -404,9 +450,13 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
         }
         prevClawButtonState = currentClawButtonState;
 
+
+        /*
         //Wobble Arm Code
         rightTrigger = gamepad1.right_trigger;
+        //rightTrigger = 0;
         leftTrigger = gamepad1.left_trigger;
+        //leftTrigger = 0;
 
 
         if(leftTrigger != 0 && rightTrigger != 0 && wobblePressed) {
@@ -428,7 +478,8 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
             wobbleClaw2.setPosition(1);
         }
 
-        wobbleArm.setPower(wobblePower);
+         */
+
     }
 
     private void DefineHardwareMap() {
@@ -467,6 +518,9 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
 
         shooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         wobbleArm.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        wobbleArm.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        wobbleArm.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
     private void MotorCode() {
@@ -617,15 +671,14 @@ public class OnePlayerGameTeleOpWithOdometry extends LinearOpMode {
     }
 
     private enum WobbleState {
-        DownOpen, VerticalClosed, DownishOpen
+        Initial, DownOpen, VerticalClosed, DropWobble
     }
 
     public double interpretAngle(double Orientation) {
         if(isWithin(Orientation, -180, 0)) {
             return Orientation;
         } else if (isWithin(Orientation, -360, -180)) {
-            double newOrientation = (Orientation +360);
-            return newOrientation;
+            return (Orientation +360);
         } else {
             return Orientation;
         }
