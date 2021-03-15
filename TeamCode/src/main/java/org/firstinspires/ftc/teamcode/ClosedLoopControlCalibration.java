@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ReadWriteFile;
 
 import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
@@ -15,28 +16,22 @@ import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
-import java.lang.Math;
-
 @Config
 @TeleOp(name="Closed Loop Control Calibration")
 public class ClosedLoopControlCalibration extends LinearOpMode {
     public DcMotorEx shooter;
+    public Servo flicker;
 
     public static double targetRPM = 4350;
     double totalRevolutions;
     double runTime = 0;
     double currentPower = 0.86;
 
-    double startTime = System.nanoTime();
-    double lastTime = 0;
-    double lastRevolutions = 0;
-    double RPM = 0;
-    double revolutionChange, timeChange;
-
-    double[] LastRPM = {0,0,0,0,0,0,0,0,0,0};
-    double runningTotal = 0;
-    double averageRPM;
-    double currentPowerMultiplier = 1;
+    //Logic for the Flicker
+    double flickerStartTime,
+            timeSinceFlicker;
+    boolean firstReturn = true,
+            tryFLick = false;
 
     File powerFile = AppUtil.getInstance().getSettingsFile("custom-power.txt");
 
@@ -44,6 +39,7 @@ public class ClosedLoopControlCalibration extends LinearOpMode {
 
 
         shooter = hardwareMap.get(DcMotorEx.class, "shooter");
+        flicker = hardwareMap.servo.get("flicker");
 
         shooter.setDirection(DcMotorSimple.Direction.REVERSE);
 
@@ -61,9 +57,7 @@ public class ClosedLoopControlCalibration extends LinearOpMode {
         while(opModeIsActive()) {
             shooter.setVelocity((targetRPM*28)/60);
 
-
-            telemetry.addData("Last Average", lastRevolutions);
-            telemetry.addData("Revolution Change", revolutionChange);
+            Flick();
 
             telemetry.addData("Velocity", shooter.getVelocity());
             telemetry.addData("Shooter Velocity in RPM", (shooter.getVelocity()/28)*60);
@@ -71,10 +65,25 @@ public class ClosedLoopControlCalibration extends LinearOpMode {
             telemetry.addData("Power", currentPower);
             telemetry.addData("Revolutions", totalRevolutions);
             telemetry.addData("Runtime (Sec)", runTime);
-            telemetry.addData("RPM", RPM);
 
             telemetry.update();
         }
         ReadWriteFile.writeFile(powerFile, String.valueOf(currentPower));
+    }
+
+    void Flick() {
+        timeSinceFlicker = (System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1);
+        if(timeSinceFlicker >= 0.5) {
+            if(firstReturn) {
+                flicker.setPosition(1);
+                firstReturn = false;
+            }
+        }
+        tryFLick = gamepad1.dpad_right || gamepad1.dpad_left;
+        if (timeSinceFlicker >= 1 && tryFLick) {
+            flicker.setPosition(0);
+            flickerStartTime = System.nanoTime();
+            firstReturn = true;
+        }
     }
 }
