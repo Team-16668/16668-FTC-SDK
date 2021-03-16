@@ -381,7 +381,7 @@ public class FtcRobotControllerActivity extends Activity
     // check to see if there is a preferred Wi-Fi to use.
     checkPreferredChannel();
 
-    FtcDashboard.start(true);
+    FtcDashboard.start();
   }
 
   protected UpdateUI createUpdateUI() {
