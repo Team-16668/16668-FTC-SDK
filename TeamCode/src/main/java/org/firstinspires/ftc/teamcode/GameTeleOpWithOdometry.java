@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -28,7 +29,7 @@ import static java.lang.Math.toRadians;
     things with names like gamepad1 and gamepad2. Those have button inputs with the game controllers associated with them.
     Run this OpMode and push all the buttons that you see to find out what they do. That should show you what most of the code does.
  */
-
+@Disabled
 @TeleOp(name="Game Teleop w/ Odometry")
 public class GameTeleOpWithOdometry extends LinearOpMode {
     RevBlinkinLedDriver lights, lights2;
