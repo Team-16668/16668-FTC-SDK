@@ -4,7 +4,7 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.arcrobotics.ftclib.util.InterpLUT;
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -78,6 +78,8 @@ public class ClosedLoopControlCalibration extends LinearOpMode {
         shooterLut.add(52,4250);
         shooterLut.add(58,4350);
         shooterLut.createLUT();
+
+
 
         waitForStart();
         shooter.setPower(currentPower);

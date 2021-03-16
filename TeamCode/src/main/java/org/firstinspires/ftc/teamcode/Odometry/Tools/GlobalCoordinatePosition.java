@@ -68,26 +68,19 @@ public class GlobalCoordinatePosition implements Runnable{
      */
     private void globalCoordinatePositionUpdate(){
         //Get Current Positions
-        //Both of these are in counts
         verticalLeftEncoderWheelPosition = (verticalEncoderLeft.getCurrentPosition() * verticalLeftEncoderPositionMultiplier);
         verticalRightEncoderWheelPosition = (verticalEncoderRight.getCurrentPosition() * verticalRightEncoderPositionMultiplier);
 
         //Both are in counts
-        //I changed this to not have the double declaration here. Originally, these variables were defined specifically in the function.
         leftChange = verticalLeftEncoderWheelPosition - previousVerticalLeftEncoderWheelPosition;
         rightChange = verticalRightEncoderWheelPosition - previousVerticalRightEncoderWheelPosition;
 
         //Calculate Angle
-        //changeInRobotOrientation = unitless
         changeInRobotOrientation = (leftChange - rightChange) / (robotEncoderWheelDistance);
-        //robotOrientationRadians = radians
         robotOrientationRadians = ((robotOrientationRadians + changeInRobotOrientation));
 
         //Get the components of the motion
-        //normalEncoderWheelPosition = counts
         normalEncoderWheelPosition = (horizontalEncoder.getCurrentPosition()*normalEncoderPositionMultiplier);
-        //rawHorizontalChange = counts
-        //I also changed this through "n" to not be defined exclusively here.
         rawHorizontalChange = normalEncoderWheelPosition - prevNormalEncoderWheelPosition;
         horizontalChange = rawHorizontalChange - (changeInRobotOrientation*horizontalEncoderTickPerDegreeOffset);
 
