@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.arcrobotics.ftclib.util.InterpLUT;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -17,6 +18,8 @@ import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
+import static java.lang.Math.pow;
+
 @Config
 @TeleOp(name="Closed Loop Tester")
 public class ClosedLoopControlCalibration extends LinearOpMode {
@@ -25,13 +28,9 @@ public class ClosedLoopControlCalibration extends LinearOpMode {
     public static double shooterSpeed = 4350;
     public static double distance = 4;
 
-    public double velocity;
-
     public DcMotorEx shooter;
     public Servo flicker, backPlate;
 
-    double totalRevolutions;
-    double runTime = 0;
     double currentPower = 0.86;
 
     //Logic for the Flicker
@@ -64,22 +63,33 @@ public class ClosedLoopControlCalibration extends LinearOpMode {
 
         dashboard = FtcDashboard.getInstance();
 
+        InterpLUT shooterLut = new InterpLUT();
+        shooterLut.add(0,4400);
+        shooterLut.add(8,4400);
+        shooterLut.add(12,4400);
+        shooterLut.add(16,4300);
+        shooterLut.add(20,4200);
+        shooterLut.add(24,4100);
+        shooterLut.add(28,4100);
+        shooterLut.add(32,4150);
+        shooterLut.add(36,4200);
+        shooterLut.add(40,4250);
+        shooterLut.add(46,4300);
+        shooterLut.add(52,4250);
+        shooterLut.add(58,4350);
+        shooterLut.createLUT();
+
         waitForStart();
         shooter.setPower(currentPower);
 
         while(opModeIsActive()) {
-            velocity = 0.000002*Math.pow(distance, 6) - 0.0004*Math.pow(distance, 5) + 0.0226*Math.pow(distance, 4) - 0.5438*Math.pow(distance, 3) + 4.5513*Math.pow(distance, 2) - 9.4781*distance + 4398.4;
-            shooter.setVelocity((velocity*28)/60);
+
+            shooter.setVelocity((shooterLut.get(distance)*28)/60);
 
             Flick();
 
-            telemetry.addData("Velocity", shooter.getVelocity());
             telemetry.addData("Shooter Velocity in RPM", (shooter.getVelocity()/28)*60);
-            telemetry.addData("Shooter Target Velocity in RPM", shooterSpeed);
-
-            telemetry.addData("Power", currentPower);
-            telemetry.addData("Revolutions", totalRevolutions);
-            telemetry.addData("Runtime (Sec)", runTime);
+            telemetry.addData("Shooter Target Velocity in RPM", shooterLut.get(distance));
 
             telemetry.update();
         }
