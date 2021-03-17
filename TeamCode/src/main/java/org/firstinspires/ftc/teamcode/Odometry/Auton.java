@@ -156,6 +156,7 @@ public class Auton extends RobotMovement {
 
             } else if (pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
                 //setNormalRPM = true;
+                shooterTargetRPM = 4400;
 
                 turnIntakeOnForward = true;
                 goToPosition( 10, 40, 0.5, 0, 2, 0.3);

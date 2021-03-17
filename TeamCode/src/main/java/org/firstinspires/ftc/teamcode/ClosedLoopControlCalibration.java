@@ -3,7 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
-import com.arcrobotics.ftclib.util.InterpLUT;
+//import com.arcrobotics.ftclib.util.InterpLUT;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -63,6 +63,7 @@ public class ClosedLoopControlCalibration extends LinearOpMode {
 
         dashboard = FtcDashboard.getInstance();
 
+        /*
         InterpLUT shooterLut = new InterpLUT();
         shooterLut.add(0,4400);
         shooterLut.add(8,4400);
@@ -79,6 +80,8 @@ public class ClosedLoopControlCalibration extends LinearOpMode {
         shooterLut.add(58,4350);
         shooterLut.createLUT();
 
+         */
+
 
 
         waitForStart();
@@ -86,12 +89,12 @@ public class ClosedLoopControlCalibration extends LinearOpMode {
 
         while(opModeIsActive()) {
 
-            shooter.setVelocity((shooterLut.get(distance)*28)/60);
+            //shooter.setVelocity((shooterLut.get(distance)*28)/60);
 
             Flick();
 
             telemetry.addData("Shooter Velocity in RPM", (shooter.getVelocity()/28)*60);
-            telemetry.addData("Shooter Target Velocity in RPM", shooterLut.get(distance));
+            //telemetry.addData("Shooter Target Velocity in RPM", shooterLut.get(distance));
 
             telemetry.update();
         }

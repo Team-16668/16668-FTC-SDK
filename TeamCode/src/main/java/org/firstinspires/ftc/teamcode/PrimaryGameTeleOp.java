@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -37,6 +38,7 @@ public class PrimaryGameTeleOp extends LinearOpMode {
     DcMotorEx shooter;
     DcMotor verticalLeft, verticalRight, horizontal;
     Servo wobbleClaw, wobbleClaw2, backPlate, flicker, wobbleLifter, ringKnocker;
+    CRServo intakeServo;
     TouchSensor wobbleTouch1, wobbleTouch2;
 
     //Global Game State Variable
@@ -271,6 +273,7 @@ public class PrimaryGameTeleOp extends LinearOpMode {
 
         if(extraIntakeRunTime > intakeStayOnTime) {
             intake.setPower(0);
+            intakeServo.setPower(0);
             keepIntakeOn = false;
         }
     }
@@ -298,7 +301,7 @@ public class PrimaryGameTeleOp extends LinearOpMode {
         //For one player
         intakeCurrentButtonState = gamepad1.b;
         //For two players
-        intakeCurrentButtonState = gamepad2.b;
+        //intakeCurrentButtonState = gamepad2.b;
 
         if(intakeCurrentButtonState != intakePrevButtonState && intakeCurrentButtonState) {
             if (intakeDirection == IntakeDirection.In) {
@@ -359,6 +362,7 @@ public class PrimaryGameTeleOp extends LinearOpMode {
 
         shooter.setPower(0);
         intake.setPower(1);
+        intakeServo.setPower(1);
     }
 
     private void SwitchToShooting() {
@@ -521,6 +525,7 @@ public class PrimaryGameTeleOp extends LinearOpMode {
         //Intake
         intake = hardwareMap.dcMotor.get("intake");
         ringKnocker = hardwareMap.servo.get("ring_knocker");
+        intakeServo = hardwareMap.get(CRServo.class, "intake_servo");
 
         //For the Wobble Goal
         wobbleClaw = hardwareMap.servo.get("wobble_claw");

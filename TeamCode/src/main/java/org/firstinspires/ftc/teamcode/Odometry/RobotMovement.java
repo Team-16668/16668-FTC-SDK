@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.Odometry;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -32,6 +33,7 @@ public class RobotMovement extends LinearOpMode {
     DcMotor intake, wobbleArm;
     DcMotorEx shooter;
     Servo wobbleClaw, wobbleClaw2, backPlate, flicker, ringKnocker, wobbleLifter;
+    CRServo intakeServo;
     TouchSensor wobbleTouch1, wobbleTouch2;
     RevBlinkinLedDriver lights, lights2;
 
@@ -459,12 +461,14 @@ public class RobotMovement extends LinearOpMode {
         }
         if(turnIntakeOnForward) {
             intake.setPower(1);
+            intakeServo.setPower(1);
             turnIntakeOnForward = false;
         }
         if(turnIntakeOnBackward) {
             intake.setPower(-1);
             turnIntakeOnBackward = false;
         } if(stopIntake) {
+            intakeServo.setPower(0);
             intake.setPower(0);
             stopIntake = false;
         }
@@ -599,6 +603,7 @@ public class RobotMovement extends LinearOpMode {
         //For the Flicker and Backplate
         backPlate = hardwareMap.servo.get("backplate");
         flicker = hardwareMap.servo.get("flicker");
+        intakeServo = hardwareMap.get(CRServo.class, "intake_servo");
 
         lights = hardwareMap.get(RevBlinkinLedDriver.class, "lights");
         lights2 = hardwareMap.get(RevBlinkinLedDriver.class, "lights2");
