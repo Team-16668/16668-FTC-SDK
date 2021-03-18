@@ -210,7 +210,8 @@ public class Auton extends RobotMovement {
                 wobbleLifter.setPosition(0.65);
                 goToPosition(-20, 75, 0.75, 179, 4, 0.3);
             } else {
-                shooter.setVelocity((4400*28)/60);
+                //shooter.setVelocity((4400*28)/60);
+                shooterTargetRPM = 4400;
 
                 turnIntakeOnForward = true;
                 goToPositionWithoutTurn(9, 32, 0.3, 2);
@@ -220,14 +221,13 @@ public class Auton extends RobotMovement {
                 Flick();
                 backPlate.setPosition(1);
 
-                goToPosition(10, 64, 0.3, 0, 5, 0.3);
+                goToPosition(10, 64, 0.25, 0, 5, 0.3);
                 ringKnocker.setPosition(0);
                 stopShooter = true;
 
                 putWobbleArmDown = true;
-                turnToPosition(0, 0, 0, 1, 0.25, 30);
                 stopIntake = true;
-
+                turnToPosition(0, 0, 0, 1, 0.25, 30);
 
                 goToPosition(26, 95, 1, 179, 5, 0.3);
                 goToPosition(30, 110, 0.25, 179, 1, 0.3);
@@ -246,18 +246,18 @@ public class Auton extends RobotMovement {
 
                 turnToPosition(19, 36, 90, 0.75, 0.3, 30);
                 wobbleLifter.setPosition(0.85);
-                goToPosition(21, 45, 1, 90, 5, 0.5);
+                goToPosition(22, 45, 1, 90, 5, 0.5);
                 //Get rid of this line if needed
-                goToPosition(21, 40, 0.25, 90, 5, 0.5);
-                turnToPosition(21.52, 0, 90, 0.3, 0.15, 30);
-                goToPosition(22, 22, 0.45, 90, 1, 0.1);
+                goToPosition(22, 40, 0.25, 90, 5, 0.5);
+                turnToPosition(22.52, 0, 90, 0.3, 0.15, 30);
+                goToPosition(23, 22, 0.45, 90, 1, 0.1);
                 wobbleLifter.setPosition(0.75);
                 sleep(500);
 
                 turnToPositionNoStop(100, 100, 1);
 
-                goToPosition(15, 95, 1, 0, 5, 0.5);
-                goToPosition(15, 114, 0.3, 0, 1, 0.3);
+                goToPosition(12, 95, 1, 0, 5, 0.5);
+                goToPosition(12, 114, 0.3, 0, 1, 0.3);
 
                 wobbleLifter.setPosition(0.89);
                 sleep(750);

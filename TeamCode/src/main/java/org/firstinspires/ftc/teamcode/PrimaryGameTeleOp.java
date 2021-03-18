@@ -96,6 +96,7 @@ public class PrimaryGameTeleOp extends LinearOpMode {
     boolean currentWobbleMachineState, prevWobbleMachineState;
     int step = 1;
     double wobbleTimerStartTime = 0, timeSinceWobbleStart = 0;
+    boolean allowManualControl = false;
 
     double distanceToTarget, robotX, robotY, robotOrientation, absoluteAngleToTarget, relativeAngleToTarget,
             relativeXToPoint, relativeYToPoint, movementXPower, movementYPower,
@@ -168,6 +169,7 @@ public class PrimaryGameTeleOp extends LinearOpMode {
                     wobbleClaw2.setPosition(1);
                     wobbleArm.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     wobbleArm.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                    allowManualControl = true;
                 }
             }
 
@@ -258,6 +260,7 @@ public class PrimaryGameTeleOp extends LinearOpMode {
         telemetry.addData("wobble counts", wobbleArm.getCurrentPosition());
         telemetry.addData("wobble mode", wobbleState);
         telemetry.addData("step", step);
+        telemetry.addData("manual control", allowManualControl);
         telemetry.addData("shooter mode", shooterState);
         telemetry.addData("X Position", globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH);
         telemetry.addData("Y Position", -globalPositionUpdate.returnYCoordinate() / COUNTS_PER_INCH);
@@ -280,9 +283,9 @@ public class PrimaryGameTeleOp extends LinearOpMode {
 
     void NormalToPowerShot() {
         //For one player
-        powerShotCurrentButton = gamepad1.y;
+        //powerShotCurrentButton = gamepad1.y;
         //For two players
-        //powershotCurrentButton = gamepad2.y;
+        powerShotCurrentButton = gamepad2.y;
         if(powerShotCurrentButton && powerShotCurrentButton != powerShotPrevButton) {
             if(shooterState == ShooterState.Normal) {
                 shooterState = ShooterState.PowerShot;
@@ -299,9 +302,9 @@ public class PrimaryGameTeleOp extends LinearOpMode {
 
     void Intake() {
         //For one player
-        intakeCurrentButtonState = gamepad1.b;
+        //intakeCurrentButtonState = gamepad1.b;
         //For two players
-        //intakeCurrentButtonState = gamepad2.b;
+        intakeCurrentButtonState = gamepad2.b;
 
         if(intakeCurrentButtonState != intakePrevButtonState && intakeCurrentButtonState) {
             if (intakeDirection == IntakeDirection.In) {
@@ -326,9 +329,9 @@ public class PrimaryGameTeleOp extends LinearOpMode {
             }
         }
         //For one player
-        tryFLick = gamepad1.left_trigger != 0;
+        //tryFLick = gamepad1.left_trigger != 0;
         //For two players
-        //tryFLick = gamepad2.left_bumper || gamepad2.right_bumper;
+        tryFLick = gamepad2.left_bumper || gamepad2.right_bumper;
         if (timeSinceFlicker >= 1 && tryFLick) {
             flicker.setPosition(0);
             flickerStartTime = System.nanoTime();
@@ -338,9 +341,9 @@ public class PrimaryGameTeleOp extends LinearOpMode {
 
     void ChangeGameStateSubroutine() {
         //For one player
-        gameCurrentButtonState = gamepad1.a;
+        //gameCurrentButtonState = gamepad1.a;
         //For two players
-        //gameCurrentButtonState = gamepad2.a;
+        gameCurrentButtonState = gamepad2.a;
 
         if(gameCurrentButtonState != gamePrevButtonState && gameCurrentButtonState)
             if(gameState == GameState.Intake) {
@@ -382,9 +385,9 @@ public class PrimaryGameTeleOp extends LinearOpMode {
 
     private void WobbleStateSubroutine() {
         //For one player
-        currentWobbleMachineState = gamepad1.x;
+        //currentWobbleMachineState = gamepad1.x;
         //For two players
-        //currentWobbleMachineState = gamepad2.x;
+        currentWobbleMachineState = gamepad2.x;
 
         if(currentWobbleMachineState && currentWobbleMachineState != prevWobbleMachineState) {
             if(wobbleState == WobbleState.Initial) {
@@ -458,9 +461,11 @@ public class PrimaryGameTeleOp extends LinearOpMode {
 
         //Claw Toggle
         //For one player
-        currentClawButtonState = gamepad1.right_trigger != 0;
-        //For two players
-        //currentClawButtonState = gamepad2.dpad_left || dpad_right;
+        //currentClawButtonState = gamepad1.right_trigger != 0;
+        //For one player
+        //
+        // two players
+        currentClawButtonState = gamepad2.dpad_left || gamepad2.dpad_right;
         if(currentClawButtonState && currentClawButtonState != prevClawButtonState) {
             if(clawState == ClawState.Open) {
                 clawState = ClawState.Closed;
@@ -476,15 +481,14 @@ public class PrimaryGameTeleOp extends LinearOpMode {
 
 
         //Uncomment all of this to give manual wobble arm control back.
-        /*
+
         //Wobble Arm Code
         //For one player
-        rightTrigger = gamepad1.right_trigger;
+        //rightTrigger = gamepad1.right_trigger;
         //For two players
         leftTrigger = gamepad2.right_trigger;
-
         //For one player
-        leftTrigger = gamepad1.left_trigger;
+        //leftTrigger = gamepad1.left_trigger;
         //For two players
         leftTrigger = gamepad2.left_trigger;
 
@@ -499,7 +503,6 @@ public class PrimaryGameTeleOp extends LinearOpMode {
         } else if(wobblePressed){
             wobblePower = 0;
         }
-
         if(wobbleTouch1.isPressed() && wobblePower < 0) {
             wobblePower = 0;
         } else if (wobbleTouch2.isPressed() && wobblePower > 0) {
@@ -507,9 +510,9 @@ public class PrimaryGameTeleOp extends LinearOpMode {
             wobbleClaw.setPosition(1);
             wobbleClaw2.setPosition(1);
         }
-
-         */
-
+        if(allowManualControl) {
+            //wobbleArm.setPower(wobblePower);
+        }
     }
 
     private void DefineHardwareMap() {
