@@ -475,10 +475,10 @@ public class RobotMovement extends LinearOpMode {
         if(runShooterControl) {
             shooter.setVelocity((shooterTargetRPM*28)/60);
             telemetry.addData("Shooter Speed", (shooter.getVelocity()/28)*60);
-            runShooterControl = false;
         }
         if(stopShooter) {
             shooter.setVelocity(0);
+            runShooterControl = false;
             stopShooter = false;
         }
         if(setPowerShotRPM) {

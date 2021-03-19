@@ -93,11 +93,11 @@ public class PrimaryGameTeleOp extends LinearOpMode {
     boolean x, dpad_left, dpad_right;
 
     //Logic for putting the arm back at the beginning of the TeleOp
-    boolean wobblePressed = false;
+    boolean allowManualControl = false;
+    boolean touchPressed = false;
     boolean currentWobbleMachineState, prevWobbleMachineState;
     int step = 1;
     double wobbleTimerStartTime = 0, timeSinceWobbleStart = 0;
-    boolean allowManualControl = false;
 
     double distanceToTarget, robotX, robotY, robotOrientation, absoluteAngleToTarget, relativeAngleToTarget,
             relativeXToPoint, relativeYToPoint, movementXPower, movementYPower,
@@ -162,15 +162,15 @@ public class PrimaryGameTeleOp extends LinearOpMode {
         while(opModeIsActive()) {
 
             //Initial putting the wobble goal up thing
-            if(!wobblePressed) {
-                wobblePressed = wobbleTouch2.isPressed();
-                if(wobblePressed) {
+            if(!allowManualControl) {
+                allowManualControl = wobbleTouch2.isPressed();
+                if(allowManualControl) {
                     wobbleArm.setPower(0);
                     wobbleClaw.setPosition(1);
                     wobbleClaw2.setPosition(1);
                     wobbleArm.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
                     wobbleArm.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                    allowManualControl = true;
+                    touchPressed = true;
                 }
             }
 
@@ -178,8 +178,8 @@ public class PrimaryGameTeleOp extends LinearOpMode {
             DriveStateRoutine();
 
             //Claw and Wobble Arm Code
+            //WobbleStateSubroutine();
             WobbleSubroutine();
-            WobbleStateSubroutine();
 
             //Shooting to Intake Subroutine
             ChangeGameStateSubroutine();
@@ -261,14 +261,17 @@ public class PrimaryGameTeleOp extends LinearOpMode {
         telemetry.addData("wobble counts", wobbleArm.getCurrentPosition());
         telemetry.addData("wobble mode", wobbleState);
         telemetry.addData("step", step);
-        telemetry.addData("manual control", allowManualControl);
+        telemetry.addData("touch 1", wobbleTouch1.isPressed());
+        telemetry.addData("touch 2", wobbleTouch2.isPressed());
+        telemetry.addData("Touch pressed", touchPressed);
+        telemetry.addData("Allow manual control", allowManualControl);
+        telemetry.addData("Left Trigger", leftTrigger);
+        telemetry.addData("Right Trigger", rightTrigger);
+        telemetry.addData("Wobble Power", wobblePower);
         telemetry.addData("shooter mode", shooterState);
         telemetry.addData("X Position", globalPositionUpdate.returnXCoordinate() / COUNTS_PER_INCH);
         telemetry.addData("Y Position", -globalPositionUpdate.returnYCoordinate() / COUNTS_PER_INCH);
         telemetry.addData("Orientation (Degrees)", MathFunctions.interpretAngle(globalPositionUpdate.returnOrientation()));
-        telemetry.addData("horizontal", horizontal.getCurrentPosition());
-        telemetry.addData("left", verticalLeft.getCurrentPosition());
-        telemetry.addData("right", verticalRight.getCurrentPosition());
         telemetry.update();
     }
 
@@ -397,33 +400,48 @@ public class PrimaryGameTeleOp extends LinearOpMode {
         if(currentWobbleMachineState && currentWobbleMachineState != prevWobbleMachineState) {
             if(x && !(dpad_left || dpad_right)) {
                 if(wobbleState == WobbleState.Initial) {
+                    allowManualControl = false;
                     wobbleState = WobbleState.DownOpen;
-                    wobbleArm.setPower(-wobblePowerToUse);
+                    //wobbleArm.setPower(-wobblePowerToUse);
+                    wobblePower = -wobblePowerToUse;
                     wobbleClaw.setPosition(0);
                     wobbleClaw2.setPosition(0);
+                    step = 1;
                 } else if (wobbleState == WobbleState.DownOpen) {
+                    allowManualControl = false;
                     wobbleState = WobbleState.VerticalClosed;
                     step = 1;
                 } else if (wobbleState == WobbleState.VerticalClosed) {
+                    allowManualControl = false;
                     wobbleState = WobbleState.DropWobble;
-                    wobbleArm.setPower(-wobblePowerToUse);
+                    //wobbleArm.setPower(-wobblePowerToUse);
+                    wobblePower = -wobblePowerToUse;
                     step = 1;
                 } else if (wobbleState == WobbleState.DropWobble) {
+                    allowManualControl = false;
                     wobbleState = wobbleState.DownOpen;
-                    wobbleArm.setPower(-wobblePowerToUse);
+                    //wobbleArm.setPower(-wobblePowerToUse);
+                    wobblePower = -wobblePowerToUse;
                     wobbleClaw.setPosition(0);
                     wobbleClaw2.setPosition(0);
+                    step = 1;
                 } else if (wobbleState == WobbleState.RetractedClosed) {
+                    allowManualControl = false;
                     wobbleState = WobbleState.DownOpen;
-                    wobbleArm.setPower(-wobblePowerToUse);
+                    //wobbleArm.setPower(-wobblePowerToUse);
+                    wobblePower = -wobblePowerToUse;
                     wobbleClaw.setPosition(0);
                     wobbleClaw2.setPosition(0);
+                    step = 1;
                 }
             } else if(dpad_left || dpad_right) {
+                allowManualControl = false;
                 wobbleState = WobbleState.RetractedClosed;
                 wobbleClaw.setPosition(1);
                 wobbleClaw2.setPosition(1);
-                wobbleArm.setPower(wobblePowerToUse);
+                //wobbleArm.setPower(wobblePowerToUse);
+                wobblePower = wobblePowerToUse;
+                step = 1;
             }
         }
 
@@ -432,8 +450,15 @@ public class PrimaryGameTeleOp extends LinearOpMode {
         if(wobbleState == WobbleState.Initial) {
             //Do nothing
         } else if (wobbleState == WobbleState.DownOpen) {
-            if(wobbleTouch1.isPressed()) {
-                wobbleArm.setPower(0);
+            if(step == 2) {
+                allowManualControl = true;
+            } else {
+                wobblePower = -wobblePowerToUse;
+                if (wobbleTouch1.isPressed()) {
+                    //wobbleArm.setPower(0);
+                    wobblePower = 0;
+                    step = 2;
+                }
             }
         } else if (wobbleState == WobbleState.VerticalClosed) {
             if(step==1) {
@@ -446,19 +471,24 @@ public class PrimaryGameTeleOp extends LinearOpMode {
             } else if (step==2) {
                 timeSinceWobbleStart = (System.nanoTime() - wobbleTimerStartTime) / TimeUnit.SECONDS.toNanos(1);
                 if(timeSinceWobbleStart >= 0.5) {
-                    wobbleArm.setPower(wobblePowerToUse);
+                    //wobbleArm.setPower(wobblePowerToUse);
+                    wobblePower = wobblePowerToUse;
                     step = 3;
                 }
+            }else if (step == 4) {
+                allowManualControl = true;
             } else if (step==3) {
                 if(wobbleArm.getCurrentPosition() >= -800) {
-                    wobbleArm.setPower(0);
+                    //wobbleArm.setPower(0);
+                    wobblePower = 0;
                     step = 4;
                 }
             }
         } else if (wobbleState == WobbleState.DropWobble) {
             if(step ==1) {
                 if(wobbleArm.getCurrentPosition() <= -1300) {
-                    wobbleArm.setPower(0);
+                    //wobbleArm.setPower(0);
+                    wobblePower = 0;
 
                     wobbleClaw.setPosition(0);
                     wobbleClaw2.setPosition(0);
@@ -469,12 +499,17 @@ public class PrimaryGameTeleOp extends LinearOpMode {
             } else if (step == 2) {
                 timeSinceWobbleStart = (System.nanoTime() - wobbleTimerStartTime) / TimeUnit.SECONDS.toNanos(1);
                 if(timeSinceWobbleStart >= 1) {
+                    allowManualControl = true;
                 }
             }
 
         } else if (wobbleState == WobbleState.RetractedClosed) {
-            if(wobbleTouch2.isPressed()) {
-                wobbleArm.setPower(0);
+            if(step ==2) {
+                allowManualControl = true;
+            } else if(wobbleTouch2.isPressed()) {
+                //wobbleArm.setPower(0);
+                wobblePower = 0;
+                step = 2;
             }
         }
     }
@@ -484,7 +519,7 @@ public class PrimaryGameTeleOp extends LinearOpMode {
         //For one player
         //currentClawButtonState = gamepad1.right_trigger != 0;
         // two players
-        currentClawButtonState = gamepad2.dpad_left || gamepad2.dpad_right;
+        currentClawButtonState = gamepad2.x;
         if(currentClawButtonState && currentClawButtonState != prevClawButtonState) {
             if(clawState == ClawState.Open) {
                 clawState = ClawState.Closed;
@@ -505,31 +540,31 @@ public class PrimaryGameTeleOp extends LinearOpMode {
         //For one player
         //rightTrigger = gamepad1.right_trigger;
         //For two players
-        leftTrigger = gamepad2.right_trigger;
+        rightTrigger = gamepad2.right_trigger;
         //For one player
         //leftTrigger = gamepad1.left_trigger;
         //For two players
         leftTrigger = gamepad2.left_trigger;
 
 
-        if(leftTrigger != 0 && rightTrigger != 0) {
+        if(leftTrigger != 0 && rightTrigger != 0 && allowManualControl) {
             wobblePower = 0;
-        } else if(leftTrigger!= 0) {
-            wobblePower = 0.55;
-        } else if (rightTrigger != 0) {
-            wobblePower = -0.55;
-        } else if(wobblePressed){
+        } else if(leftTrigger!= 0 && allowManualControl) {
+            wobblePower = wobblePowerToUse;
+        } else if (rightTrigger != 0 && allowManualControl) {
+            wobblePower = -wobblePowerToUse;
+        } else if(rightTrigger == 0 && leftTrigger == 0 && allowManualControl){
             wobblePower = 0;
         }
 
-        if(wobbleTouch1.isPressed() && wobblePower < 0) {
+        if(wobbleTouch1.isPressed() && wobblePower < 0 && allowManualControl) {
             wobblePower = 0;
-        } else if (wobbleTouch2.isPressed() && wobblePower > 0) {
+        } else if (wobbleTouch2.isPressed() && wobblePower > 0 && allowManualControl) {
             wobblePower = 0;
             wobbleClaw.setPosition(1);
             wobbleClaw2.setPosition(1);
         }
-        if(wobblePressed) {
+        if(touchPressed) {
             wobbleArm.setPower(wobblePower);
         }
     }
