@@ -144,16 +144,15 @@ public class Auton extends RobotMovement {
 
                 turnToPositionNoStop(100, 100, 0.6);
 
-                turnToPosition(10, 70, 0, 0.3, 0.2, 30);
-                goToPosition(13, 70, 0.5, 0, 2, 0.3);
-                turnToPosition(13, 79, 0, 0.3, 0.15, 30);
+                turnToPosition(10, 65, 0, 0.3, 0.2, 30);
+                goToPosition(13, 65, 0.5, 0, 2, 0.3);
+                turnToPosition(13, 72, 0, 0.3, 0.15, 30);
                 wobbleLifter.setPosition(0.89);
                 sleep(750);
 
                 StrafeFromWobble();
 
-                goToPosition(-10, 67, 1, 179, 2, 0.3);
-
+                //goToPosition(-10, 79, 1, 179, 2, 0.3);
             } else if (pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
                 //setNormalRPM = true;
                 shooterTargetRPM = 4400;
@@ -211,17 +210,19 @@ public class Auton extends RobotMovement {
                 goToPosition(-20, 75, 0.75, 179, 4, 0.3);
             } else {
                 //shooter.setVelocity((4400*28)/60);
-                shooterTargetRPM = 4400;
+                shooterTargetRPM = 4300;
 
                 turnIntakeOnForward = true;
                 goToPositionWithoutTurn(9, 32, 0.3, 2);
+                //goToPositionWithoutTurn(9, 40, 0.2, 2);
                 sleep(2000);
                 backPlate.setPosition(0);
                 sleep(500);
                 Flick();
+                //Flick();
                 backPlate.setPosition(1);
 
-                goToPosition(10, 64, 0.25, 0, 5, 0.3);
+                goToPosition(10, 68, 0.25, 0, 5, 0.3);
                 ringKnocker.setPosition(0);
                 stopShooter = true;
 
@@ -244,20 +245,20 @@ public class Auton extends RobotMovement {
 
                 //This is where I get the second wobble. There appears to be some error in the odometry wheels, which makes this one differet.
 
-                turnToPosition(19, 36, 90, 0.75, 0.3, 30);
+                turnToPosition(19, 36, 90, 1, 0.3, 30);
                 wobbleLifter.setPosition(0.85);
                 goToPosition(21, 45, 1, 90, 5, 0.5);
                 //Get rid of this line if needed
                 goToPosition(21, 40, 0.25, 90, 5, 0.5);
-                turnToPosition(21.5, 0, 90, 0.3, 0.15, 30);
-                goToPosition(21.5, 22, 0.45, 90, 1, 0.1);
+                turnToPosition(22.5, 0, 90, 0.3, 0.15, 30);
+                goToPosition(22, 18, 0.45, 90, 1, 0.1);
                 wobbleLifter.setPosition(0.75);
                 sleep(500);
 
                 turnToPositionNoStop(100, 100, 1);
 
-                goToPosition(12, 95, 1, 0, 5, 0.5);
-                goToPosition(12, 114, 0.3, 0, 1, 0.3);
+                goToPosition(16, 95, 1, 0, 5, 0.5);
+                goToPosition(16, 114, 0.3, 0, 1, 0.3);
 
                 wobbleLifter.setPosition(0.89);
                 sleep(750);
@@ -317,7 +318,7 @@ public class Auton extends RobotMovement {
         Flick();
         Flick();
         Flick();
-        sleep(1000);
+        //sleep(1000);
         backPlate.setPosition(1);
         sleep(500);
     }

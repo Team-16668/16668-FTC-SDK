@@ -227,7 +227,7 @@ public class PrimaryGameTeleOp extends LinearOpMode {
             }
         }
 
-        currentAState = gamepad1.a;
+        currentAState = false;
 
         if(currentAState && currentAState != prevAState) {
             if(driveState == DriveState.Normal) {
