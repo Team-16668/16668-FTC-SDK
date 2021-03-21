@@ -11,8 +11,8 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.teamcode.Odometry.Tools.GlobalCoordinatePosition;
-import org.firstinspires.ftc.teamcode.Odometry.Tools.MathFunctions;
+import org.firstinspires.ftc.teamcode.RandomTools.Odometry.Tools.GlobalCoordinatePosition;
+import org.firstinspires.ftc.teamcode.RandomTools.Odometry.Tools.MathFunctions;
 
 import java.util.concurrent.TimeUnit;
 
