@@ -211,6 +211,35 @@ public class SampleMecanumDrive extends MecanumDrive {
         mode = Mode.TURN;
     }
 
+    public void turnToPosAsync(double x, double y) {
+        double xDifference = -(y-getPoseEstimate().getY());
+        double yDifference = x-getPoseEstimate().getX();
+
+        double angle = Math.atan2(y-getPoseEstimate().getY(), x-getPoseEstimate().getX());
+
+        if(angle >= 90 && angle <= 180) {
+            angle += -90;
+        } else if(angle >= 0 && angle < 90) {
+            angle += 270;
+        } else if(angle < 0 && angle > -180) {
+            angle += 270;
+        }
+
+        double heading = getPoseEstimate().getHeading();
+
+        lastPoseOnTurn = getPoseEstimate();
+
+        turnProfile = MotionProfileGenerator.generateSimpleMotionProfile(
+                new MotionState(heading, 0, 0, 0),
+                new MotionState(angle, 0, 0, 0),
+                MAX_ANG_VEL,
+                MAX_ANG_ACCEL
+        );
+
+        turnStart = clock.seconds();
+        mode = Mode.TURN;
+    }
+
     public void turn(double angle) {
         turnAsync(angle);
         waitForIdle();
@@ -220,6 +249,12 @@ public class SampleMecanumDrive extends MecanumDrive {
         turnToAsync(angle);
         waitForIdle();
     }
+
+    public void turnToPos(double x, double y) {
+        turnToPosAsync(x, y);
+        waitForIdle();
+    }
+
 
     public void followTrajectoryAsync(Trajectory trajectory) {
         follower.followTrajectory(trajectory);
