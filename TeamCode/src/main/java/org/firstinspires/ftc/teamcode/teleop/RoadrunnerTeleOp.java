@@ -99,22 +99,27 @@ public class RoadrunnerTeleOp extends LinearOpMode {
         //Initialize hardware map values.
         InitializeHardwaremap();
 
+        double distanceToShooter = 60;
+
         //Initialize the dashboard
         dashboard = FtcDashboard.getInstance();
         shooterLut = new InterpLUT();
         shooterLut.add(0,4400);
-        shooterLut.add(8,4400);
-        shooterLut.add(12,4400);
-        shooterLut.add(16,4300);
-        shooterLut.add(20,4200);
-        shooterLut.add(24,4100);
-        shooterLut.add(28,4100);
-        shooterLut.add(32,4150);
-        shooterLut.add(36,4200);
-        shooterLut.add(40,4250);
-        shooterLut.add(46,4300);
-        shooterLut.add(52,4250);
-        shooterLut.add(58,4350);
+        shooterLut.add(0+distanceToShooter,4400);
+        shooterLut.add(8+distanceToShooter,4400);
+        shooterLut.add(12+distanceToShooter,4400);
+        shooterLut.add(16+distanceToShooter,4300);
+        shooterLut.add(20+distanceToShooter,4200);
+        shooterLut.add(24+distanceToShooter,4100);
+        shooterLut.add(28+distanceToShooter,4100);
+        shooterLut.add(32+distanceToShooter,4150);
+        shooterLut.add(36+distanceToShooter,4200);
+        shooterLut.add(40+distanceToShooter,4250);
+        shooterLut.add(46+distanceToShooter,4300);
+        shooterLut.add(52+distanceToShooter,4250);
+        shooterLut.add(58+distanceToShooter,4350);
+        //This one might need to be changed if the distance from far away is completely wack.
+        shooterLut.add(200,4350);
         shooterLut.createLUT();
 
         //Set the Localizer/Positioning System
