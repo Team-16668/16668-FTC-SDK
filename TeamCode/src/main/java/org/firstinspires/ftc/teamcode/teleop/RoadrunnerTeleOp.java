@@ -1,8 +1,8 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
-import com.acmerobotics.roadrunner.drive.Drive;
+import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
-import com.acmerobotics.roadrunner.geometry.Vector2d;
+import com.arcrobotics.ftclib.util.InterpLUT;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -23,18 +23,20 @@ public class RoadrunnerTeleOp extends LinearOpMode {
     RevBlinkinLedDriver lights, lights2;
     DcMotor intake, wobbleArm;
     DcMotorEx shooter;
-    DcMotor verticalLeft, verticalRight, horizontal;
     Servo wobbleClaw, wobbleClaw2, backPlate, flicker, wobbleLifter, ringKnocker;
     CRServo intakeServo;
     TouchSensor wobbleTouch1, wobbleTouch2;
 
     //Global Game State Variable
     GameState gameState = GameState.Intake;
-    DriveState driveState = DriveState.Normal;
+    DriveState driveState = DriveState.DRIVER_CONTROL;
+    FtcDashboard dashboard;
 
     //Logic for Odometry
     boolean currentAState = false;
     boolean prevAState = false;
+    double goToHeading;
+    double powerMultiplier;
 
     //Logic for RTM
     boolean gamePrevButtonState = false,
@@ -62,6 +64,7 @@ public class RoadrunnerTeleOp extends LinearOpMode {
             normalTargetRPM = 4400,
             powerShotTargetRPM = 3800,
             shooterTargetRPM = normalTargetRPM;
+    InterpLUT shooterLut;
 
     //Logic for Power Shots
     ShooterState shooterState = ShooterState.Normal;
@@ -95,6 +98,24 @@ public class RoadrunnerTeleOp extends LinearOpMode {
 
         //Initialize hardware map values.
         InitializeHardwaremap();
+
+        //Initialize the dashboard
+        dashboard = FtcDashboard.getInstance();
+        shooterLut = new InterpLUT();
+        shooterLut.add(0,4400);
+        shooterLut.add(8,4400);
+        shooterLut.add(12,4400);
+        shooterLut.add(16,4300);
+        shooterLut.add(20,4200);
+        shooterLut.add(24,4100);
+        shooterLut.add(28,4100);
+        shooterLut.add(32,4150);
+        shooterLut.add(36,4200);
+        shooterLut.add(40,4250);
+        shooterLut.add(46,4300);
+        shooterLut.add(52,4250);
+        shooterLut.add(58,4350);
+        shooterLut.createLUT();
 
         //Set the Localizer/Positioning System
         drive = new SampleMecanumDrive(hardwareMap);
@@ -137,8 +158,10 @@ public class RoadrunnerTeleOp extends LinearOpMode {
             ChangeGameStateSubroutine();
 
             if(gameState == GameState.Shooting) {
-                //Shooting();
-                shooter.setVelocity((shooterTargetRPM*28)/60);
+                //This is the simple code for being on a square to the goal.
+                //shooter.setVelocity((shooterTargetRPM*28)/60);
+                Shooting();
+
             } else {
                 Intake();
             }
@@ -156,78 +179,26 @@ public class RoadrunnerTeleOp extends LinearOpMode {
 
     }
 
-    public void DriveCode() {
-        // Make sure to call drive.update() on *every* loop
-        // Increasing loop time by utilizing bulk reads and minimizing writes will increase your odometry accuracy
-        drive.update();
-
-        // Retrieve your pose
-        Pose2d myPose = drive.getPoseEstimate();
-
-        // Read pose
-        Pose2d poseEstimate = drive.getPoseEstimate();
-
-        // Create a vector from the gamepad x/y inputs
-        // Then, rotate that vector by the inverse of that heading
-        Vector2d input = new Vector2d(
-                gamepad1.left_stick_x,
-                -gamepad1.left_stick_y
-        ).rotated(-poseEstimate.getHeading());
-
-        // Pass in the rotated input + right stick value for rotation
-        // Rotation is not part of the rotated input thus must be passed in separately
-        drive.setWeightedDrivePower(
-                new Pose2d(
-                        input.getX(),
-                        input.getY(),
-                        -gamepad1.right_stick_x
-                )
-        );
+    private void Shooting() {
+        if(shooterState == ShooterState.Normal) {
+            Pose2d myPose = drive.getPoseEstimate();
+            //double shooterVelocity = shooterLut.get(drive.distanceFromPoint(myPose.getX(), myPose.getY(), 72, -36));
+            double shooterVelocity = shooterLut.get(4);
+            shooter.setVelocity((shooterVelocity*28)/60);
+        } else if(shooterState == ShooterState.PowerShot) {
+            shooter.setVelocity((powerShotTargetRPM*28)/60);
+        }
     }
 
     void Telemetry() {
         Pose2d myPose = drive.getPoseEstimate();
 
-        telemetry.addData("wobble counts", wobbleArm.getCurrentPosition());
-        telemetry.addData("wobble mode", wobbleState);
-        telemetry.addData("step", step);
-        telemetry.addData("touch 1", wobbleTouch1.isPressed());
-        telemetry.addData("touch 2", wobbleTouch2.isPressed());
-        telemetry.addData("Touch pressed", touchPressed);
-        telemetry.addData("Allow manual control", allowManualControl);
-        telemetry.addData("Left Trigger", leftTrigger);
-        telemetry.addData("Right Trigger", rightTrigger);
-        telemetry.addData("Wobble Power", wobblePower);
         telemetry.addData("shooter mode", shooterState);
+        telemetry.addData("Drive mode", driveState);
         telemetry.addData("x", myPose.getX());
         telemetry.addData("y", myPose.getY());
         telemetry.addData("heading", myPose.getHeading());
         telemetry.update();
-    }
-
-    void DriveStateRoutine() {
-        if(driveState == DriveState.Normal) {
-            DriveCode();
-        }else {
-
-        }
-
-        currentAState = false;
-
-        if(currentAState && currentAState != prevAState) {
-            if(driveState == DriveState.Normal) {
-                driveState = DriveState.Odometry;
-                SwitchToOdometry();
-            } else if(driveState == DriveState.Odometry) {
-                driveState = DriveState.Normal;
-            }
-        }
-
-        prevAState = currentAState;
-    }
-
-    void SwitchToOdometry() {
-        drive.turnToAsync();
     }
 
     void IntakeTimer() {
@@ -248,11 +219,9 @@ public class RoadrunnerTeleOp extends LinearOpMode {
         if(powerShotCurrentButton && powerShotCurrentButton != powerShotPrevButton) {
             if(shooterState == ShooterState.Normal) {
                 shooterState = ShooterState.PowerShot;
-                shooterTargetRPM = powerShotTargetRPM;
                 lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.YELLOW);
             } else {
                 shooterState = ShooterState.Normal;
-                shooterTargetRPM = normalTargetRPM;
                 lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
             }
         }
@@ -524,6 +493,80 @@ public class RoadrunnerTeleOp extends LinearOpMode {
         }
     }
 
+    void RoadrunnerCode() {
+        //Basic turn for now
+        //drive.turnToAsync(goToHeading);
+        drive.turnToAsync(Math.toRadians(45));
+
+        //TODO: Make it automatically move behind the line if that is needed.
+    }
+
+    public void DriveCode() {
+        // Make sure to call drive.update() on *every* loop
+        // Increasing loop time by utilizing bulk reads and minimizing writes will increase your odometry accuracy
+        drive.update();
+
+        // Read pose
+        Pose2d poseEstimate = drive.getPoseEstimate();
+
+        /*
+        // Create a vector from the gamepad x/y inputs
+        // Then, rotate that vector by the inverse of that heading
+        Vector2d input = new Vector2d(
+                gamepad1.left_stick_x,
+                -gamepad1.left_stick_y
+        ).rotated(-poseEstimate.getHeading());
+
+        // Pass in the rotated input + right stick value for rotation
+        // Rotation is not part of the rotated input thus must be passed in separately
+        drive.setWeightedDrivePower(
+                new Pose2d(
+                        input.getX(),
+                        input.getY(),
+                        -gamepad1.right_stick_x
+                )
+        );
+
+        */
+        //This is the code you would use for a non-field centric design
+        if(gamepad1.left_bumper) {
+            powerMultiplier = 0.25;
+        } else if(gamepad1.right_bumper) {
+            powerMultiplier = 0.9;
+        } else {
+            powerMultiplier = 0.55;
+        }
+        drive.setWeightedDrivePower(
+                new Pose2d(
+                        -gamepad1.left_stick_y * powerMultiplier,
+                        -gamepad1.left_stick_x * powerMultiplier,
+                        -gamepad1.right_stick_x * powerMultiplier
+                )
+        );
+
+    }
+
+    void DriveStateRoutine() {
+        if(driveState == DriveState.DRIVER_CONTROL) {
+            DriveCode();
+        }else if(driveState == DriveState.AUTOMATIC){
+            RoadrunnerCode();
+        }
+
+        currentAState = gamepad1.a;
+
+        if(currentAState && currentAState != prevAState) {
+            if(driveState == DriveState.DRIVER_CONTROL) {
+                driveState = DriveState.AUTOMATIC;
+                goToHeading = drive.headingFromPoints(72, -36);
+            } else if(driveState == DriveState.AUTOMATIC) {
+                driveState = DriveState.DRIVER_CONTROL;
+            }
+        }
+
+        prevAState = currentAState;
+    }
+
     private void InitializeHardwaremap() {
         //Shooter
         shooter = hardwareMap.get(DcMotorEx.class, "shooter");
@@ -577,7 +620,7 @@ public class RoadrunnerTeleOp extends LinearOpMode {
 
     private enum ClawState {Open, Closed}
 
-    private enum DriveState {Normal, Odometry}
+    private enum DriveState {DRIVER_CONTROL, AUTOMATIC}
 
     private enum WobbleState {Initial, DownOpen, VerticalClosed, DropWobble, RetractedClosed}
 

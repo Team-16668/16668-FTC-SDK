@@ -35,6 +35,7 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 
+import org.firstinspires.ftc.teamcode.Roadrunner.drive.StandardTrackingWheelLocalizer;
 import org.firstinspires.ftc.teamcode.Roadrunner.util.DashboardUtil;
 import org.firstinspires.ftc.teamcode.Roadrunner.util.LynxModuleUtil;
 
@@ -56,10 +57,11 @@ import static org.firstinspires.ftc.teamcode.Roadrunner.drive.DriveConstants.kSt
 import static org.firstinspires.ftc.teamcode.Roadrunner.drive.DriveConstants.kV;
 
 /*
- * Simple mecanum drive hardware implementation for REV hardware.
+ * This is a modified SampleMecanumDrive class that implements the ability to cancel a trajectory
+ * following. Essentially, it just forces the mode to IDLE.
  */
 @Config
-public class SampleMecanumDrive extends MecanumDrive {
+public class SampleMecanumDriveCancelable extends MecanumDrive {
     public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(8, 0, 0.011);
     public static PIDCoefficients HEADING_PID = new PIDCoefficients(8, 0, 0);
 
@@ -100,7 +102,7 @@ public class SampleMecanumDrive extends MecanumDrive {
 
     private Pose2d lastPoseOnTurn;
 
-    public SampleMecanumDrive(HardwareMap hardwareMap) {
+    public SampleMecanumDriveCancelable(HardwareMap hardwareMap) {
         super(kV, kA, kStatic, TRACK_WIDTH, TRACK_WIDTH, LATERAL_MULTIPLIER);
 
         dashboard = FtcDashboard.getInstance();
@@ -130,6 +132,12 @@ public class SampleMecanumDrive extends MecanumDrive {
         for (LynxModule module : hardwareMap.getAll(LynxModule.class)) {
             module.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO);
         }
+
+        // TODO: adjust the names of the following hardware devices to match your configuration
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.angleUnit = BNO055IMU.AngleUnit.RADIANS;
+        imu.initialize(parameters);
 
         // TODO: if your hub is mounted vertically, remap the IMU axes so that the z-axis points
         // upward (normal to the floor) using a command like the following:
@@ -165,6 +173,7 @@ public class SampleMecanumDrive extends MecanumDrive {
         // TODO: if desired, use setLocalizer() to change the localization method
         // for instance, setLocalizer(new ThreeTrackingWheelLocalizer(...));
         setLocalizer(new StandardTrackingWheelLocalizer(hardwareMap));
+
     }
 
     public TrajectoryBuilder trajectoryBuilder(Pose2d startPose) {
@@ -195,73 +204,10 @@ public class SampleMecanumDrive extends MecanumDrive {
         mode = Mode.TURN;
     }
 
-    public void turnToAsync(double angle) {
-        double heading = getPoseEstimate().getHeading();
-
-        lastPoseOnTurn = getPoseEstimate();
-
-        turnProfile = MotionProfileGenerator.generateSimpleMotionProfile(
-                new MotionState(heading, 0, 0, 0),
-                new MotionState(angle, 0, 0, 0),
-                MAX_ANG_VEL,
-                MAX_ANG_ACCEL
-        );
-
-        turnStart = clock.seconds();
-        mode = Mode.TURN;
-    }
-
-    public void turnToPosAsync(double x, double y) {
-        double heading = getPoseEstimate().getHeading();
-
-        lastPoseOnTurn = getPoseEstimate();
-
-        turnProfile = MotionProfileGenerator.generateSimpleMotionProfile(
-                new MotionState(heading, 0, 0, 0),
-                new MotionState(headingFromPoints(x, y), 0, 0, 0),
-                MAX_ANG_VEL,
-                MAX_ANG_ACCEL
-        );
-
-        turnStart = clock.seconds();
-        mode = Mode.TURN;
-    }
-
-    public double headingFromPoints(double x, double y) {
-        double xDifference = -(y-getPoseEstimate().getY());
-        double yDifference = x-getPoseEstimate().getX();
-
-        double angle = Math.toDegrees(Math.atan2(yDifference, xDifference));
-
-        if(angle >= 90 && angle <= 180) {
-            angle += -90;
-        } else if(angle >= 0 && angle < 90) {
-            angle += 270;
-        } else if(angle < 0 && angle > -180) {
-            angle += 270;
-        }
-        return Math.toRadians(angle);
-    }
-
-    public double distanceFromPoint(double robotX, double robotY, double x, double y) {
-        return Math.hypot(robotX-x, robotY-y);
-    }
-
     public void turn(double angle) {
         turnAsync(angle);
         waitForIdle();
     }
-
-    public void turnTo(double angle) {
-        turnToAsync(angle);
-        waitForIdle();
-    }
-
-    public void turnToPos(double x, double y) {
-        turnToPosAsync(x, y);
-        waitForIdle();
-    }
-
 
     public void followTrajectoryAsync(Trajectory trajectory) {
         follower.followTrajectory(trajectory);
@@ -271,6 +217,10 @@ public class SampleMecanumDrive extends MecanumDrive {
     public void followTrajectory(Trajectory trajectory) {
         followTrajectoryAsync(trajectory);
         waitForIdle();
+    }
+
+    public void cancelFollowing() {
+        mode = Mode.IDLE;
     }
 
     public Pose2d getLastError() {

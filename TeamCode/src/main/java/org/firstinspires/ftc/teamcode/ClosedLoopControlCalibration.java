@@ -5,6 +5,7 @@ import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 //import com.arcrobotics.ftclib.util.InterpLUT;
 
+import com.arcrobotics.ftclib.util.InterpLUT;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -25,7 +26,6 @@ import static java.lang.Math.pow;
 public class ClosedLoopControlCalibration extends LinearOpMode {
     FtcDashboard dashboard;
 
-    public static double shooterSpeed = 4350;
     public static double distance = 4;
 
     public DcMotorEx shooter;
@@ -38,8 +38,6 @@ public class ClosedLoopControlCalibration extends LinearOpMode {
             timeSinceFlicker;
     boolean firstReturn = true,
             tryFLick = false;
-
-    File powerFile = AppUtil.getInstance().getSettingsFile("custom-power.txt");
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -63,7 +61,6 @@ public class ClosedLoopControlCalibration extends LinearOpMode {
 
         dashboard = FtcDashboard.getInstance();
 
-        /*
         InterpLUT shooterLut = new InterpLUT();
         shooterLut.add(0,4400);
         shooterLut.add(8,4400);
@@ -80,16 +77,12 @@ public class ClosedLoopControlCalibration extends LinearOpMode {
         shooterLut.add(58,4350);
         shooterLut.createLUT();
 
-         */
-
-
-
         waitForStart();
         shooter.setPower(currentPower);
 
         while(opModeIsActive()) {
 
-            //shooter.setVelocity((shooterLut.get(distance)*28)/60);
+            shooter.setVelocity((shooterLut.get(distance)*28)/60);
 
             Flick();
 
@@ -98,7 +91,6 @@ public class ClosedLoopControlCalibration extends LinearOpMode {
 
             telemetry.update();
         }
-        ReadWriteFile.writeFile(powerFile, String.valueOf(currentPower));
     }
 
     void Flick() {
