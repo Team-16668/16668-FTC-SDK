@@ -4,12 +4,16 @@ import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 
 import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
+
+import static java.lang.Thread.sleep;
 
 /**
  * Created by Jacob on 3/22/2021.
@@ -27,6 +31,9 @@ public class BackgroundThread implements Runnable{
     private boolean isRunning = true;
 
     private int sleepTime;
+
+    //Variables for different background tasks
+    boolean checkOnWobbleArm = false;
 
     /**
      * Constructor for the Background Thread
@@ -72,10 +79,121 @@ public class BackgroundThread implements Runnable{
      */
     private void primaryTask(){
         //TODO: Create functions that can actually be used here
+        if(checkOnWobbleArm) {
+            boolean condition1 = wobbleTouch2.isPressed() && wobbleArm.getPower() > 0;
+            boolean condition2 = wobbleTouch1.isPressed() && wobbleArm.getPower() < 0;
+            if(condition1 || condition2) {
+                wobbleArm.setPower(0);
+                checkOnWobbleArm = false;
+            }
+        }
+    }
+
+    //Discrete Functions I need while Not Moving
+    public void Flick() {
+        //TODO: Fix this logic
+        flickerStartTime = System.nanoTime();
+        flicker.setPosition(0);
+        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 0.5 && opModeIsActive() && !isStopRequested()) {
+            Thread.sleep(10);
+        }
+        flicker.setPosition(1);
+        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 1 && opModeIsActive() && !isStopRequested()) {
+            Thread.sleep(10);
+        }
+    }
+
+    public void putWobbleArmDown() {
+        wobbleArm.setPower(-0.45);
+        checkOnWobbleArm = true;
+    }
+
+    public void putWobbleArmUp() {
+        wobbleArm.setPower(0.37);
+        checkOnWobbleArm = true;
+    }
+
+    public void setShooterRPM(double RPM) {
+        shooter.setVelocity((RPM/60)*28);
+    }
+
+    public void runIntakeForward() {
+        intake.setPower(1);
+        intakeServo.setPower(1);
+    }
+
+    public void runIntakeBackward() {
+        intake.setPower(-1);
+        intakeServo.setPower(-1);
+    }
+
+    public void stopIntake() {
+        intake.setPower(0);
+        intakeServo.setPower(0);
+    }
+
+    public void liftBackplate() {
+        backPlate.setPosition(0);
+    }
+
+    public void lowerBackplate() {
+        backPlate.setPosition(1);
+    }
+
+    public void releaseWobble() {
+        wobbleClaw.setPosition(0);
+        wobbleClaw2.setPosition(0);
+    }
+
+    public void grabWobble() {
+        wobbleClaw.setPosition(1);
+        wobbleClaw2.setPosition(1);
+    }
+
+    public void putWobbleLifterDown() {
+        wobbleLifter.setPosition(0.85);
+    }
+
+    public void liftWobble() {
+        wobbleLifter.setPosition(0.75);
+    }
+
+    public void putWobbleLifterUp() {
+        wobbleLifter.setPosition(0.66);
+    }
+
+    public void putDownRingKnocker() {
+        ringKnocker.setPosition(1);
+    }
+
+    public void liftUpRingKnocker() {
+        ringKnocker.setPosition(0);
+    }
+
+    public void setLightPattern(int lightSet, RevBlinkinLedDriver.BlinkinPattern pattern) {
+        if(lightSet == 1) {
+            lights.setPattern(pattern);
+        } else if (lightSet == 2) {
+            lights2.setPattern(pattern);
+        }
     }
 
     public void init() {
-        //TODO: Set all motors, servos, sensors, lights, etc. to their proper modes/states
+        //Set motor directions
+        shooter.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        shooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        wobbleArm.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        //Set servo states
+        wobbleClaw.setPosition(1);
+        wobbleClaw2.setPosition(1);
+        backPlate.setPosition(0);
+        flicker.setPosition(1);
+
+        ringKnocker.setPosition(0);
+        wobbleLifter.setPosition(0.66);
+        //wobbleLifter.setPosition(0.85);
     }
 
     /**
@@ -91,7 +209,7 @@ public class BackgroundThread implements Runnable{
         while(isRunning) {
             primaryTask();
             try {
-                Thread.sleep(sleepTime);
+                sleep(sleepTime);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
