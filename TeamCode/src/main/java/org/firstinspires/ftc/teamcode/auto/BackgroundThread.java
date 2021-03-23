@@ -15,7 +15,7 @@ import java.io.File;
  * Created by Jacob on 3/22/2021.
  */
 public class BackgroundThread implements Runnable{
-    //Odometry wheels
+    //All the hardware objects that need to exist
     private DcMotor intake, wobbleArm;
     private DcMotorEx shooter;
     private Servo wobbleClaw, wobbleClaw2, backPlate, flicker, ringKnocker, wobbleLifter;
@@ -71,7 +71,11 @@ public class BackgroundThread implements Runnable{
      * This is the method that controls the active tasks (i.e. stopping the wobble arm once it's reached the ground, etc)
      */
     private void primaryTask(){
+        //TODO: Create functions that can actually be used here
+    }
 
+    public void init() {
+        //TODO: Set all motors, servos, sensors, lights, etc. to their proper modes/states
     }
 
     /**

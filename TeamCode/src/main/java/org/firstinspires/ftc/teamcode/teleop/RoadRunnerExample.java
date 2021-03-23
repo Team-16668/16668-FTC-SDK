@@ -8,6 +8,8 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
+import org.firstinspires.ftc.teamcode.Roadrunner.drive.SampleMecanumDriveCancelable;
+
 /**
  * This opmode demonstrates how one can augment driver control by following Road Runner arbitrary
  * Road Runner trajectories at any time during teleop. This really isn't recommended at all. This is
@@ -58,7 +60,7 @@ public class RoadRunnerExample extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         // Initialize custom cancelable SampleMecanumDrive class
-        org.firstinspires.ftc.teamcode.drive.advanced.SampleMecanumDriveCancelable drive = new org.firstinspires.ftc.teamcode.drive.advanced.SampleMecanumDriveCancelable(hardwareMap);
+        SampleMecanumDriveCancelable drive = new SampleMecanumDriveCancelable(hardwareMap);
 
         // We want to turn off velocity control for teleop
         // Velocity control per wheel is not necessary outside of motion profiled auto
