@@ -1,9 +1,11 @@
 package org.firstinspires.ftc.teamcode.auto;
 
+import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorControllerEx;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.util.ReadWriteFile;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 
 import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 
@@ -14,155 +16,68 @@ import java.io.File;
  */
 public class BackgroundThread implements Runnable{
     //Odometry wheels
-    private DcMotor verticalEncoderLeft, verticalEncoderRight, horizontalEncoder;
+    private DcMotor intake, wobbleArm;
+    private DcMotorEx shooter;
+    private Servo wobbleClaw, wobbleClaw2, backPlate, flicker, ringKnocker, wobbleLifter;
+    private CRServo intakeServo;
+    private TouchSensor wobbleTouch1, wobbleTouch2;
+    private RevBlinkinLedDriver lights, lights2;
 
     //Thread run condition
     private boolean isRunning = true;
 
-    //Position variables used for storage and calculations
-    double verticalRightEncoderWheelPosition = 0, verticalLeftEncoderWheelPosition = 0, normalEncoderWheelPosition = 0,  changeInRobotOrientation = 0;
-    private double robotGlobalXCoordinatePosition = 0, robotGlobalYCoordinatePosition = 0, robotOrientationRadians = 0;
-    private double previousVerticalRightEncoderWheelPosition = 0, previousVerticalLeftEncoderWheelPosition = 0, prevNormalEncoderWheelPosition = 0;
-
-    //Algorithm constants
-    private double robotEncoderWheelDistance;
-    private double horizontalEncoderTickPerDegreeOffset;
-
-    private double leftChange;
-    private double rightChange;
-
-    private double rawHorizontalChange;
-    private double horizontalChange;
-    private double p;
-    private double n;
-
-    //Sleep time interval (milliseconds) for the position update thread
     private int sleepTime;
 
-    //Files to access the algorithm constants
-    private File wheelBaseSeparationFile = AppUtil.getInstance().getSettingsFile("wheelBaseSeparation.txt");
-    private File horizontalTickOffsetFile = AppUtil.getInstance().getSettingsFile("horizontalTickOffset.txt");
-
-    private int verticalLeftEncoderPositionMultiplier = 1;
-    private int verticalRightEncoderPositionMultiplier = 1;
-    private int normalEncoderPositionMultiplier = 1;
-
     /**
-     * Constructor for GlobalCoordinatePosition Thread
-     * @param verticalEncoderLeft left odometry encoder, facing the vertical direction
-     * @param verticalEncoderRight right odometry encoder, facing the vertical direction
-     * @param horizontalEncoder horizontal odometry encoder, perpendicular to the other two odometry encoder wheels
-     * @param threadSleepDelay delay in milliseconds for the GlobalPositionUpdate thread (50-75 milliseconds is suggested)
+     * Constructor for the Background Thread
+     * @param shooter A DcMotorEx object for the ring shooter
+     * @param intake A DcMotor object for the intake
+     * @param wobbleArm A DcMotor object for the wobble arm motor
+     * @param wobbleClaw A Servo object for the first wobble claw
+     * @param wobbleClaw2 A Servo object for the second wobble claw
+     * @param backPlate A Servo object for the backplate of the RTM
+     * @param flicker A Servo object for the flicker of the RTM
+     * @param ringKnocker A Servo object for the 3D printed mechanism to knock over a stack of rings
+     * @param wobbleLifter A Servo object for the secondary wobble lifter that is used in auto
+     * @param intakeServo A CRServo object for the continuous rotation servo that runs when intaking rings
+     * @param wobbleTouch1 A TouchSensor object that senses whether the wobble arm has hit the touch sensor yet
+     * @param wobbleTouch2 A TouchSensor object that senses whether the wobble arm has hit the touch sensor yet
+     * @param lights A RevBlinkinLedDriver for the first string of lights on the robot
+     * @param lights2 A RevBlinkinLedDrive for the second string of lights on the robot
+     * @param threadSleepDelay A parameter for the time that the thread should sleep between loops (in milliseconds)
      */
-    public BackgroundThread(DcMotorControllerEx shooter, DcMotor intake, DcMotor wobbleArm, Servo wobbleClaw, Servo wobbleClaw2, Servo backPlate, Servo flicker, Servo ringKnocker, Servo wobbleLifter int threadSleepDelay){
-        this.verticalEncoderLeft = verticalEncoderLeft;
-        this.verticalEncoderRight = verticalEncoderRight;
-        this.horizontalEncoder = horizontalEncoder;
+    public BackgroundThread(DcMotorEx shooter, DcMotor intake, DcMotor wobbleArm, Servo wobbleClaw,
+                            Servo wobbleClaw2, Servo backPlate, Servo flicker, Servo ringKnocker, Servo wobbleLifter,
+                            CRServo intakeServo, TouchSensor wobbleTouch1, TouchSensor wobbleTouch2,
+                            RevBlinkinLedDriver lights, RevBlinkinLedDriver lights2, int threadSleepDelay){
+        this.intake = intake;
+        this.wobbleArm = wobbleArm;
+        this.shooter = shooter;
+        this.wobbleClaw = wobbleClaw;
+        this.wobbleClaw2 = wobbleClaw2;
+        this.backPlate = backPlate;
+        this.flicker = flicker;
+        this.ringKnocker = ringKnocker;
+        this.wobbleLifter = wobbleLifter;
+        this.intakeServo = intakeServo;
+        this.wobbleTouch1 = wobbleTouch1;
+        this.wobbleTouch2 = wobbleTouch2;
+        this.lights = lights;
+        this.lights2 = lights2;
         sleepTime = threadSleepDelay;
+    }
 
-        robotEncoderWheelDistance = Double.parseDouble(ReadWriteFile.readFile(wheelBaseSeparationFile).trim()) * COUNTS_PER_INCH;
-        this.horizontalEncoderTickPerDegreeOffset = Double.parseDouble(ReadWriteFile.readFile(horizontalTickOffsetFile).trim());
+    /**
+     * This is the method that controls the active tasks (i.e. stopping the wobble arm once it's reached the ground, etc)
+     */
+    private void primaryTask(){
 
     }
 
     /**
-     * Updates the global (x, y, theta) coordinate position of the robot using the odometry encoders
-     */
-    private void globalCoordinatePositionUpdate(){
-        //Get Current Positions
-        verticalLeftEncoderWheelPosition = (verticalEncoderLeft.getCurrentPosition() * verticalLeftEncoderPositionMultiplier);
-        verticalRightEncoderWheelPosition = (verticalEncoderRight.getCurrentPosition() * verticalRightEncoderPositionMultiplier);
-
-        //Both are in counts
-        leftChange = verticalLeftEncoderWheelPosition - previousVerticalLeftEncoderWheelPosition;
-        rightChange = verticalRightEncoderWheelPosition - previousVerticalRightEncoderWheelPosition;
-
-        //Calculate Angle
-        changeInRobotOrientation = (leftChange - rightChange) / (robotEncoderWheelDistance);
-        robotOrientationRadians = ((robotOrientationRadians + changeInRobotOrientation));
-
-        //Get the components of the motion
-        normalEncoderWheelPosition = (horizontalEncoder.getCurrentPosition()*normalEncoderPositionMultiplier);
-        rawHorizontalChange = normalEncoderWheelPosition - prevNormalEncoderWheelPosition;
-        horizontalChange = rawHorizontalChange - (changeInRobotOrientation*horizontalEncoderTickPerDegreeOffset);
-
-        p = ((rightChange + leftChange) / 2);
-        n = horizontalChange;
-
-        //Calculate and update the position values
-        robotGlobalXCoordinatePosition = robotGlobalXCoordinatePosition + (p*Math.sin(robotOrientationRadians) + n*Math.cos(robotOrientationRadians));
-        robotGlobalYCoordinatePosition = robotGlobalYCoordinatePosition + (p*Math.cos(robotOrientationRadians) - n*Math.sin(robotOrientationRadians));
-
-        previousVerticalLeftEncoderWheelPosition = verticalLeftEncoderWheelPosition;
-        previousVerticalRightEncoderWheelPosition = verticalRightEncoderWheelPosition;
-        prevNormalEncoderWheelPosition = normalEncoderWheelPosition;
-    }
-
-    /**
-     * Returns the robot's global x coordinate
-     * @return global x coordinate
-     */
-    public double returnXCoordinate(){ return robotGlobalXCoordinatePosition; }
-
-    /**
-     * Returns the robot's global y coordinate
-     * @return global y coordinate
-     */
-    public double returnYCoordinate(){ return robotGlobalYCoordinatePosition; }
-
-    /**
-     * Returns the robot's global orientation
-     * @return global orientation, in degrees
-     */
-    public double returnOrientation(){ return Math.toDegrees(robotOrientationRadians) % 360; }
-
-    public void setZero() {
-        verticalLeftEncoderWheelPosition = 0;
-        verticalRightEncoderWheelPosition = 0;
-        leftChange = 0;
-        rightChange = 0;
-        changeInRobotOrientation = 0;
-        robotOrientationRadians = 0;
-        normalEncoderWheelPosition = 0;
-        rawHorizontalChange = 0;
-        horizontalChange = 0;
-        p = 0;
-        n = 0;
-        robotGlobalXCoordinatePosition = 0;
-        robotGlobalYCoordinatePosition = 0;
-        previousVerticalLeftEncoderWheelPosition = 0;
-        previousVerticalRightEncoderWheelPosition = 0;
-        prevNormalEncoderWheelPosition = 0;
-    }
-
-    /**
-     * Stops the position update thread
+     * Stops the position thread
      */
     public void stop(){ isRunning = false; }
-
-    public void reverseLeftEncoder(){
-        if(verticalLeftEncoderPositionMultiplier == 1){
-            verticalLeftEncoderPositionMultiplier = -1;
-        }else{
-            verticalLeftEncoderPositionMultiplier = 1;
-        }
-    }
-
-    public void reverseRightEncoder(){
-        if(verticalRightEncoderPositionMultiplier == 1){
-            verticalRightEncoderPositionMultiplier = -1;
-        }else{
-            verticalRightEncoderPositionMultiplier = 1;
-        }
-    }
-
-    public void reverseNormalEncoder(){
-        if(normalEncoderPositionMultiplier == 1){
-            normalEncoderPositionMultiplier = -1;
-        }else{
-            normalEncoderPositionMultiplier = 1;
-        }
-    }
 
     /**
      * Runs the thread
@@ -170,7 +85,7 @@ public class BackgroundThread implements Runnable{
     @Override
     public void run() {
         while(isRunning) {
-            globalCoordinatePositionUpdate();
+            primaryTask();
             try {
                 Thread.sleep(sleepTime);
             } catch (InterruptedException e) {
