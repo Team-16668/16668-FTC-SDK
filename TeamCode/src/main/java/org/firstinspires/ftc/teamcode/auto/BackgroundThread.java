@@ -34,6 +34,9 @@ public class BackgroundThread implements Runnable{
 
     //Variables for different background tasks
     boolean checkOnWobbleArm = false;
+    public boolean flicking = false;
+    double flickerStartTime = 0;
+    double totalFlickerTime = 1;
 
     /**
      * Constructor for the Background Thread
@@ -87,20 +90,22 @@ public class BackgroundThread implements Runnable{
                 checkOnWobbleArm = false;
             }
         }
+
+        if(flicking) {
+            if((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) >= totalFlickerTime / 2) {
+                flicker.setPosition(1);
+            }
+            if((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= totalFlickerTime) {
+                flicking = false;
+            }
+        }
     }
 
     //Discrete Functions I need while Not Moving
     public void Flick() {
-        //TODO: Fix this logic
-        flickerStartTime = System.nanoTime();
+        flicking = true;
         flicker.setPosition(0);
-        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 0.5 && opModeIsActive() && !isStopRequested()) {
-            Thread.sleep(10);
-        }
-        flicker.setPosition(1);
-        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 1 && opModeIsActive() && !isStopRequested()) {
-            Thread.sleep(10);
-        }
+        flickerStartTime = System.nanoTime();
     }
 
     public void putWobbleArmDown() {
