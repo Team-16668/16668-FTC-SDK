@@ -29,7 +29,7 @@ public class ShootingConsistencyTest extends LinearOpMode {
 
     public static double TESTING_SPEED = 0.9 * MOTOR_MAX_RPM;
 
-    public static PIDFCoefficients MOTOR_VELO_PID = new PIDFCoefficients(30, 0, 2, 15);
+    public static PIDFCoefficients MOTOR_VELO_PID = new PIDFCoefficients(50, 0, 10, 15);
 
     private double lastKp = 0.0;
     private double lastKi = 0.0;
@@ -88,9 +88,9 @@ public class ShootingConsistencyTest extends LinearOpMode {
     }
 
     private void printVelocity(DcMotorEx motor, double target) {
-        telemetry.addData("targetVelocity", rpmToTicksPerSecond(target));
+        telemetry.addData("targetVelocity", target);
 
-        double motorVelo = motor.getVelocity();
+        double motorVelo = (motor.getVelocity()/28)*60;
         telemetry.addData("velocity", motorVelo);
         telemetry.addData("error", rpmToTicksPerSecond(target) - motorVelo);
 

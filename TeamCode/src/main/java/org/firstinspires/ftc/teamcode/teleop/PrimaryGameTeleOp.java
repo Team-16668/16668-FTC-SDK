@@ -1,5 +1,9 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
+import android.util.Log;
+
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -7,8 +11,11 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.PIDCoefficients;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.teamcode.RandomTools.Odometry.Tools.GlobalCoordinatePosition;
@@ -40,6 +47,9 @@ public class PrimaryGameTeleOp extends LinearOpMode {
     Servo wobbleClaw, wobbleClaw2, backPlate, flicker, wobbleLifter, ringKnocker;
     CRServo intakeServo;
     TouchSensor wobbleTouch1, wobbleTouch2;
+
+    private VoltageSensor batteryVoltageSensor;
+
 
     //Global Game State Variable
     GameState gameState = GameState.Intake;
@@ -107,6 +117,8 @@ public class PrimaryGameTeleOp extends LinearOpMode {
 
     final double COUNTS_PER_INCH = 307.699557;
 
+    private FtcDashboard dashboard = FtcDashboard.getInstance();
+
     //Hardware Map Names for drive motors and odometry wheels.
     String rfName = "right_front", rbName = "right_back", lfName = "left_front", lbName = "left_back";
     String verticalLeftEncoderName = rbName, verticalRightEncoderName = lfName, horizontalEncoderName = rfName;
@@ -115,6 +127,8 @@ public class PrimaryGameTeleOp extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
+        telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
+
         telemetry.addData(" Status", " Initializing");
         telemetry.update();
 
@@ -136,6 +150,11 @@ public class PrimaryGameTeleOp extends LinearOpMode {
 
         wobbleLifter.setPosition(0.66);
         ringKnocker.setPosition(0);
+
+        batteryVoltageSensor = hardwareMap.voltageSensor.iterator().next();
+        shooter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(
+                50, 0, 10, 15 * 12 / batteryVoltageSensor.getVoltage()
+        ));
 
         waitForStart();
 

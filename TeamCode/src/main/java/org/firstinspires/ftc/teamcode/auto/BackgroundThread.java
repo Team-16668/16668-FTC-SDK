@@ -81,7 +81,6 @@ public class BackgroundThread implements Runnable{
      * This is the method that controls the active tasks (i.e. stopping the wobble arm once it's reached the ground, etc)
      */
     private void primaryTask(){
-        //TODO: Create functions that can actually be used here
         if(checkOnWobbleArm) {
             boolean condition1 = wobbleTouch2.isPressed() && wobbleArm.getPower() > 0;
             boolean condition2 = wobbleTouch1.isPressed() && wobbleArm.getPower() < 0;

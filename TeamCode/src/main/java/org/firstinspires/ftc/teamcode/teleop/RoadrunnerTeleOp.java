@@ -2,6 +2,9 @@ package org.firstinspires.ftc.teamcode.teleop;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
+import com.acmerobotics.roadrunner.geometry.Vector2d;
+import com.acmerobotics.roadrunner.trajectory.Trajectory;
+import com.acmerobotics.roadrunner.util.Angle;
 import com.arcrobotics.ftclib.util.InterpLUT;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -9,10 +12,14 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 
 import org.firstinspires.ftc.teamcode.Roadrunner.drive.SampleMecanumDrive;
+import org.firstinspires.ftc.teamcode.Roadrunner.drive.SampleMecanumDriveCancelable;
 
 import java.util.concurrent.TimeUnit;
 
@@ -26,6 +33,8 @@ public class RoadrunnerTeleOp extends LinearOpMode {
     Servo wobbleClaw, wobbleClaw2, backPlate, flicker, wobbleLifter, ringKnocker;
     CRServo intakeServo;
     TouchSensor wobbleTouch1, wobbleTouch2;
+    private VoltageSensor batteryVoltageSensor;
+
 
     //Global Game State Variable
     GameState gameState = GameState.Intake;
@@ -89,7 +98,9 @@ public class RoadrunnerTeleOp extends LinearOpMode {
     int step = 1;
     double wobbleTimerStartTime = 0, timeSinceWobbleStart = 0;
 
-    SampleMecanumDrive drive;
+    int turnStep = 1;
+
+    SampleMecanumDriveCancelable drive;
 
     public void runOpMode() {
 
@@ -123,7 +134,12 @@ public class RoadrunnerTeleOp extends LinearOpMode {
         shooterLut.createLUT();
 
         //Set the Localizer/Positioning System
-        drive = new SampleMecanumDrive(hardwareMap);
+        drive = new SampleMecanumDriveCancelable(hardwareMap);
+
+        batteryVoltageSensor = hardwareMap.voltageSensor.iterator().next();
+        shooter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(
+                50, 0, 10, 15 * 12 / batteryVoltageSensor.getVoltage()
+        ));
 
         // Set your initial pose to x: 10, y: 10, facing 90 degrees
         drive.setPoseEstimate(new Pose2d(-62, -26, Math.toRadians(0)));
@@ -135,6 +151,7 @@ public class RoadrunnerTeleOp extends LinearOpMode {
 
         //Put the wobble arm down by default
         wobbleArm.setPower(wobblePowerToUse);
+        intake.setPower(1);
         shooterStartTime = System.nanoTime();
         flickerStartTime = System.nanoTime();
 
@@ -187,8 +204,8 @@ public class RoadrunnerTeleOp extends LinearOpMode {
     private void Shooting() {
         if(shooterState == ShooterState.Normal) {
             Pose2d myPose = drive.getPoseEstimate();
-            //double shooterVelocity = shooterLut.get(drive.distanceFromPoint(myPose.getX(), myPose.getY(), 72, -36));
-            double shooterVelocity = shooterLut.get(4);
+            double shooterVelocity = shooterLut.get(drive.distanceFromPoint(myPose.getX(), myPose.getY(), 72, -42));
+            //double shooterVelocity = shooterLut.get(4);
             shooter.setVelocity((shooterVelocity*28)/60);
         } else if(shooterState == ShooterState.PowerShot) {
             shooter.setVelocity((powerShotTargetRPM*28)/60);
@@ -498,19 +515,7 @@ public class RoadrunnerTeleOp extends LinearOpMode {
         }
     }
 
-    void RoadrunnerCode() {
-        //Basic turn for now
-        //drive.turnToAsync(goToHeading);
-        drive.turnToAsync(Math.toRadians(45));
-
-        //TODO: Make it automatically move behind the line if that is needed.
-    }
-
     public void DriveCode() {
-        // Make sure to call drive.update() on *every* loop
-        // Increasing loop time by utilizing bulk reads and minimizing writes will increase your odometry accuracy
-        drive.update();
-
         // Read pose
         Pose2d poseEstimate = drive.getPoseEstimate();
 
@@ -552,18 +557,41 @@ public class RoadrunnerTeleOp extends LinearOpMode {
     }
 
     void DriveStateRoutine() {
+        Pose2d poseEstimate = drive.getPoseEstimate();
+
+        drive.update();
         if(driveState == DriveState.DRIVER_CONTROL) {
             DriveCode();
         }else if(driveState == DriveState.AUTOMATIC){
-            RoadrunnerCode();
+            if(!drive.isBusy() && turnStep == 1) {
+                drive.turnAsync(Angle.normDelta(drive.headingFromPoints(72, -42) - poseEstimate.getHeading()));
+                turnStep = 2;
+            } else if(!drive.isBusy() && turnStep == 2) {
+                step = 1;
+                driveState = DriveState.DRIVER_CONTROL;
+            }
         }
 
         currentAState = gamepad1.a;
 
         if(currentAState && currentAState != prevAState) {
             if(driveState == DriveState.DRIVER_CONTROL) {
+                turnStep = 1;
                 driveState = DriveState.AUTOMATIC;
-                goToHeading = drive.headingFromPoints(72, -36);
+                //Update the drive class
+                drive.update();
+
+                // Read pose
+
+                if(poseEstimate.getX() <= -18) {
+                    drive.turnAsync(Angle.normDelta(drive.headingFromPoints(72, -42) - poseEstimate.getHeading()));
+                } else {
+                    Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
+                            .lineToLinearHeading(new Pose2d(-10, poseEstimate.getY(), drive.headingFromPoints(72, -42)))
+                            .build();
+                    drive.followTrajectoryAsync(trajectory);
+                }
+                //drive.turnAsync(Angle.normDelta(135 - poseEstimate.getHeading()));
             } else if(driveState == DriveState.AUTOMATIC) {
                 driveState = DriveState.DRIVER_CONTROL;
             }
@@ -595,6 +623,8 @@ public class RoadrunnerTeleOp extends LinearOpMode {
 
         lights = hardwareMap.get(RevBlinkinLedDriver.class, "lights");
         lights2 = hardwareMap.get(RevBlinkinLedDriver.class, "lights2");
+
+        shooter.setDirection(DcMotorSimple.Direction.REVERSE);
 
         shooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         wobbleArm.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
