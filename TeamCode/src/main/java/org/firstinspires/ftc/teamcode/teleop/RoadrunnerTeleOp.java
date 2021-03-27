@@ -1,7 +1,5 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
-import android.os.PowerManager;
-
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
@@ -19,8 +17,8 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 
-import org.apache.commons.math3.analysis.function.Power;
 import org.firstinspires.ftc.teamcode.Roadrunner.drive.SampleMecanumDriveCancelable;
+import org.firstinspires.ftc.teamcode.Roadrunner.util.RoadrunnerPoint;
 
 import java.util.concurrent.TimeUnit;
 
@@ -36,19 +34,33 @@ public class RoadrunnerTeleOp extends LinearOpMode {
     TouchSensor wobbleTouch1, wobbleTouch2;
     private VoltageSensor batteryVoltageSensor;
 
-
-    //Global Game State Variable
+    //All the State Machines
     GameState gameState = GameState.Intake;
     DriveState driveState = DriveState.DRIVER_CONTROL;
+    Powershot currentPowerShot = Powershot.Left;
+    IntakeDirection intakeDirection = IntakeDirection.In;
+    ShooterState shooterState = ShooterState.Normal;
+    ClawState clawState = ClawState.Closed;
+    WobbleState wobbleState = WobbleState.Initial;
+
+
+
+    //Global Game State Variable
     FtcDashboard dashboard;
     double goalXPos = 72;
     double goalYPos = -42;
     double shootingLineX = -10;
-    Powershot powershot = Powershot.Left;
     boolean currentBState = false;
     boolean prevBState = false;
-    double powerShotPosX = 0;
-    double powerShotPosY = 0;
+    boolean dpadLeft;
+    boolean dpadRight;
+    boolean dpadCurrentSate;
+    boolean dpadPrevState;
+    RoadrunnerPoint powerShotShootingPoint = new RoadrunnerPoint(0, 0);
+    RoadrunnerPoint powerShotTargetPointLeft = new RoadrunnerPoint(0, 0);
+    RoadrunnerPoint powerShotTargetPointCenter = new RoadrunnerPoint(0, 0);
+    RoadrunnerPoint powerShotTargetPointRight = new RoadrunnerPoint(0, 0);
+    RoadrunnerPoint currentPowerShotTargetPoint = new RoadrunnerPoint(0, 0);
 
     //Logic for Odometry
     boolean currentAState = false;
@@ -60,7 +72,6 @@ public class RoadrunnerTeleOp extends LinearOpMode {
             gameCurrentButtonState = false;
 
     //Logic for Reversing Intake Direction
-    IntakeDirection intakeDirection = IntakeDirection.In;
     boolean intakePrevButtonState = false,
             intakeCurrentButtonState = false;
 
@@ -84,18 +95,15 @@ public class RoadrunnerTeleOp extends LinearOpMode {
     InterpLUT shooterLut;
 
     //Logic for Power Shots
-    ShooterState shooterState = ShooterState.Normal;
     boolean powerShotCurrentButton = false;
     boolean powerShotPrevButton = false;
 
     //Logic for Wobble Claw and Arm
     boolean currentClawButtonState, prevClawButtonState = false;
     double leftTrigger, rightTrigger, wobblePower;
-    ClawState clawState = ClawState.Closed;
 
     //Logic for the Wobble State Machine.
     //There will still be an optional button to open or close the claw manually, but it will be primarily automatic
-    WobbleState wobbleState = WobbleState.Initial;
     double wobblePowerToUse = 0.75;
     boolean x, dpad_left, dpad_right;
 
@@ -565,18 +573,28 @@ public class RoadrunnerTeleOp extends LinearOpMode {
     }
 
     void DriveStateRoutine() {
+        //Get the robot's current position
         Pose2d poseEstimate = drive.getPoseEstimate();
-
+        //Update the drive
         drive.update();
+
         if(driveState == DriveState.DRIVER_CONTROL) {
             DriveCode();
         }else if(driveState == DriveState.NORMAL_AUTOMATIC){
             if(!drive.isBusy() && turnStep == 1) {
-                drive.turnAsync(Angle.normDelta(drive.headingFromPoints(goalXPos, goalYPos) - poseEstimate.getHeading()));
+                drive.turnAsync(Angle.normDelta(drive.headingFromPoint(goalXPos, goalYPos) - poseEstimate.getHeading()));
                 turnStep = 2;
             } else if(!drive.isBusy() && turnStep == 2) {
-                step = 1;
+                turnStep = 1;
                 driveState = DriveState.DRIVER_CONTROL;
+            }
+        }else if(driveState == DriveState.POWERSHOT_AUTOMATIC) {
+            if(!drive.isBusy() && turnStep == 1) {
+                turnStep = 2;
+                drive.turnAsync(Angle.normDelta(drive.headingFromPoint(currentPowerShotTargetPoint.x, currentPowerShotTargetPoint.y)
+                        - poseEstimate.getHeading()));
+            }else if(!drive.isBusy() && turnStep == 2) {
+                turnStep = 1;
             }
         }
 
@@ -587,37 +605,77 @@ public class RoadrunnerTeleOp extends LinearOpMode {
             if(driveState == DriveState.DRIVER_CONTROL) {
                 turnStep = 1;
                 driveState = DriveState.NORMAL_AUTOMATIC;
-                //Update the drive class
-                drive.update();
-
-                // Read pose
 
                 if(poseEstimate.getX() <= shootingLineX) {
-                    drive.turnAsync(Angle.normDelta(drive.headingFromPoints(goalXPos, goalYPos) - poseEstimate.getHeading()));
+                    drive.turnAsync(Angle.normDelta(drive.headingFromPoint(goalXPos, goalYPos) - poseEstimate.getHeading()));
                 } else {
                     Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
-                            .lineToLinearHeading(new Pose2d(shootingLineX, poseEstimate.getY(), drive.headingFromPoints(goalXPos, goalYPos)))
+                            .lineToLinearHeading(new Pose2d(shootingLineX, poseEstimate.getY(), drive.headingFromPoints(goalXPos, goalYPos, shootingLineX, poseEstimate.getY())))
                             .build();
                     drive.followTrajectoryAsync(trajectory);
                 }
-                //drive.turnAsync(Angle.normDelta(135 - poseEstimate.getHeading()));
-            } else if(driveState == DriveState.NORMAL_AUTOMATIC) {
+            } else if(driveState == DriveState.NORMAL_AUTOMATIC || driveState == DriveState.POWERSHOT_AUTOMATIC) {
                 driveState = DriveState.DRIVER_CONTROL;
+                drive.cancelFollowing();
             }
         }
 
         if(currentBState && currentBState != prevBState) {
             if(driveState == DriveState.DRIVER_CONTROL) {
-                //TODO: Finish all of this to make it work properly
+                driveState = DriveState.POWERSHOT_AUTOMATIC;
+                turnStep = 1;
+
+                if(currentPowerShot == Powershot.Left) currentPowerShotTargetPoint = powerShotTargetPointLeft;
+                else if(currentPowerShot == Powershot.Center) currentPowerShotTargetPoint = powerShotTargetPointCenter;
+                else if(currentPowerShot == Powershot.Right) currentPowerShotTargetPoint = powerShotTargetPointRight;
+
                 Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
-                        .lineToLinearHeading(new Pose2d(powerShotPosX, powerShotPosY, drive.headingFromPoints(goalXPos, goalYPos)))
+                        .lineToLinearHeading(new Pose2d(powerShotShootingPoint.x, powerShotShootingPoint.y,
+                                drive.headingFromPoints(currentPowerShotTargetPoint.x, currentPowerShotTargetPoint.y,
+                                        powerShotShootingPoint.x, powerShotShootingPoint.y)))
                         .build();
+
                 drive.followTrajectoryAsync(trajectory);
-            } else if (driveState == DriveState.POWERSHOT_AUTOMATIC) {
+            } else if (driveState == DriveState.POWERSHOT_AUTOMATIC || driveState == DriveState.NORMAL_AUTOMATIC) {
                 driveState = DriveState.DRIVER_CONTROL;
+                drive.cancelFollowing();
             }
         }
 
+        dpadLeft = gamepad1.dpad_left;
+        dpadRight = gamepad1.dpad_right;
+        dpadCurrentSate = dpadLeft || dpadRight;
+
+        if(dpadCurrentSate && dpadCurrentSate != dpadPrevState) {
+            drive.cancelFollowing();
+            if(dpadLeft) {
+                if(currentPowerShot == Powershot.Left) {
+                    //Do nothing
+                } else if(currentPowerShot == Powershot.Center) {
+                    currentPowerShot = Powershot.Left;
+                    drive.turnAsync(Angle.normDelta(drive.headingFromPoint(powerShotTargetPointLeft.x, powerShotTargetPointLeft.y)
+                            - poseEstimate.getHeading()));
+                } else if(currentPowerShot == Powershot.Right) {
+                    currentPowerShot = Powershot.Center;
+                    drive.turnAsync(Angle.normDelta(drive.headingFromPoint(powerShotTargetPointCenter.x, powerShotTargetPointCenter.y)
+                            - poseEstimate.getHeading()));
+                }
+            } else if(dpadRight) {
+                if(currentPowerShot == Powershot.Left) {
+                    currentPowerShot = Powershot.Center;
+                    drive.turnAsync(Angle.normDelta(drive.headingFromPoint(powerShotTargetPointCenter.x, powerShotTargetPointCenter.y)
+                            - poseEstimate.getHeading()));
+                } else if(currentPowerShot == Powershot.Center) {
+                    currentPowerShot = Powershot.Right;
+                    drive.turnAsync(Angle.normDelta(drive.headingFromPoint(powerShotTargetPointRight.x, powerShotTargetPointRight.y)
+                            - poseEstimate.getHeading()));
+                } else if(currentPowerShot == Powershot.Right) {
+                    //Do nothing
+                }
+            }
+        }
+
+        dpadPrevState = dpadCurrentSate;
         prevAState = currentAState;
         prevBState = currentBState;
     }

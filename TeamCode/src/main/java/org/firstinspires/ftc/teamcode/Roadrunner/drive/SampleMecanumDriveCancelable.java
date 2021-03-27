@@ -35,7 +35,6 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 
-import org.firstinspires.ftc.teamcode.Roadrunner.drive.StandardTrackingWheelLocalizer;
 import org.firstinspires.ftc.teamcode.Roadrunner.util.DashboardUtil;
 import org.firstinspires.ftc.teamcode.Roadrunner.util.LynxModuleUtil;
 
@@ -226,7 +225,7 @@ public class SampleMecanumDriveCancelable extends MecanumDrive {
 
         turnProfile = MotionProfileGenerator.generateSimpleMotionProfile(
                 new MotionState(heading, 0, 0, 0),
-                new MotionState(headingFromPoints(x, y), 0, 0, 0),
+                new MotionState(headingFromPoint(x, y), 0, 0, 0),
                 MAX_ANG_VEL,
                 MAX_ANG_ACCEL
         );
@@ -236,9 +235,26 @@ public class SampleMecanumDriveCancelable extends MecanumDrive {
     }
 
 
-    public double headingFromPoints(double x, double y) {
+    public double headingFromPoint(double x, double y) {
         double xDifference = -(y-getPoseEstimate().getY());
         double yDifference = x-getPoseEstimate().getX();
+
+        double angle = Math.toDegrees(Math.atan2(yDifference, xDifference));
+
+        if(angle >= 90 && angle <= 180) {
+            angle += -90;
+        } else if(angle >= 0 && angle < 90) {
+            angle += 270;
+        } else if(angle < 0 && angle > -180) {
+            angle += 270;
+        }
+        return Math.toRadians(angle);
+    }
+
+    //x2 and y2 are for the point that you start from. Point 1 is for the point that you want to get a heading for
+    public double headingFromPoints(double x1, double y1, double x2, double y2) {
+        double xDifference = -(y1-y2);
+        double yDifference = x1-x2;
 
         double angle = Math.toDegrees(Math.atan2(yDifference, xDifference));
 
