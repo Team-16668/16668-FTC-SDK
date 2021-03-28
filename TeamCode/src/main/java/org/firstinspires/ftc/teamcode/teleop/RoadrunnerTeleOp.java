@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
 import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.acmerobotics.roadrunner.util.Angle;
@@ -46,9 +47,13 @@ public class RoadrunnerTeleOp extends LinearOpMode {
 
 
     //Global Game State Variable
-    FtcDashboard dashboard;
+    FtcDashboard dashboard = FtcDashboard.getInstance();
     double goalXPos = 72;
-    double goalYPos = -42;
+    double goalYPos = -39;
+    double rightGoalXPos = 72;
+    double rightGoalYPos = -37;
+    double currentXPos = goalXPos;
+    double currentYPos = goalYPos;
     double shootingLineX = -10;
     boolean currentBState = false;
     boolean prevBState = false;
@@ -56,11 +61,11 @@ public class RoadrunnerTeleOp extends LinearOpMode {
     boolean dpadRight;
     boolean dpadCurrentSate;
     boolean dpadPrevState;
-    RoadrunnerPoint powerShotShootingPoint = new RoadrunnerPoint(0, 0);
-    RoadrunnerPoint powerShotTargetPointLeft = new RoadrunnerPoint(0, 0);
-    RoadrunnerPoint powerShotTargetPointCenter = new RoadrunnerPoint(0, 0);
-    RoadrunnerPoint powerShotTargetPointRight = new RoadrunnerPoint(0, 0);
-    RoadrunnerPoint currentPowerShotTargetPoint = new RoadrunnerPoint(0, 0);
+    RoadrunnerPoint powerShotShootingPoint = new RoadrunnerPoint(-10, -10);
+    RoadrunnerPoint powerShotTargetPointLeft = new RoadrunnerPoint(72, -10);
+    RoadrunnerPoint powerShotTargetPointCenter = new RoadrunnerPoint(72, -20);
+    RoadrunnerPoint powerShotTargetPointRight = new RoadrunnerPoint(72, -30);
+    RoadrunnerPoint currentPowerShotTargetPoint = new RoadrunnerPoint(powerShotTargetPointLeft.x, powerShotTargetPointLeft.y);
 
     //Logic for Odometry
     boolean currentAState = false;
@@ -120,6 +125,8 @@ public class RoadrunnerTeleOp extends LinearOpMode {
 
     public void runOpMode() {
 
+        telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
+
         telemetry.addData(" Status", " Initializing");
         telemetry.update();
 
@@ -168,6 +175,7 @@ public class RoadrunnerTeleOp extends LinearOpMode {
         //Put the wobble arm down by default
         wobbleArm.setPower(wobblePowerToUse);
         intake.setPower(1);
+        intakeServo.setPower(1);
         shooterStartTime = System.nanoTime();
         flickerStartTime = System.nanoTime();
 
@@ -220,10 +228,12 @@ public class RoadrunnerTeleOp extends LinearOpMode {
     private void Shooting() {
         if(shooterState == ShooterState.Normal) {
             Pose2d myPose = drive.getPoseEstimate();
+            shooterTargetRPM = drive.distanceFromPoint(myPose.getX(), myPose.getY(), goalXPos, goalYPos);
             double shooterVelocity = shooterLut.get(drive.distanceFromPoint(myPose.getX(), myPose.getY(), goalXPos, goalYPos));
             //double shooterVelocity = shooterLut.get(4);
             shooter.setVelocity((shooterVelocity*28)/60);
         } else if(shooterState == ShooterState.PowerShot) {
+            shooterTargetRPM = powerShotTargetRPM;
             shooter.setVelocity((powerShotTargetRPM*28)/60);
         }
     }
@@ -231,8 +241,11 @@ public class RoadrunnerTeleOp extends LinearOpMode {
     void Telemetry() {
         Pose2d myPose = drive.getPoseEstimate();
 
+        telemetry.addData("velocity", (shooter.getVelocity()/28)*60);
+        telemetry.addData("target velocity", shooterTargetRPM);
         telemetry.addData("shooter mode", shooterState);
         telemetry.addData("Drive mode", driveState);
+        telemetry.addData("Powershot", currentPowerShot);
         telemetry.addData("x", myPose.getX());
         telemetry.addData("y", myPose.getY());
         telemetry.addData("heading", myPose.getHeading());
@@ -582,7 +595,7 @@ public class RoadrunnerTeleOp extends LinearOpMode {
             DriveCode();
         }else if(driveState == DriveState.NORMAL_AUTOMATIC){
             if(!drive.isBusy() && turnStep == 1) {
-                drive.turnAsync(Angle.normDelta(drive.headingFromPoint(goalXPos, goalYPos) - poseEstimate.getHeading()));
+                drive.turnAsync(Angle.normDelta(drive.headingFromPoint(currentXPos, currentYPos) - poseEstimate.getHeading()));
                 turnStep = 2;
             } else if(!drive.isBusy() && turnStep == 2) {
                 turnStep = 1;
@@ -594,7 +607,7 @@ public class RoadrunnerTeleOp extends LinearOpMode {
                 drive.turnAsync(Angle.normDelta(drive.headingFromPoint(currentPowerShotTargetPoint.x, currentPowerShotTargetPoint.y)
                         - poseEstimate.getHeading()));
             }else if(!drive.isBusy() && turnStep == 2) {
-                turnStep = 1;
+                //turnStep = 1;
             }
         }
 
@@ -606,11 +619,19 @@ public class RoadrunnerTeleOp extends LinearOpMode {
                 turnStep = 1;
                 driveState = DriveState.NORMAL_AUTOMATIC;
 
+                if(poseEstimate.getY() <= goalYPos) {
+                    currentXPos = rightGoalXPos;
+                    currentYPos = rightGoalYPos;
+                } else {
+                    currentXPos = goalXPos;
+                    currentYPos = goalYPos;
+                }
+
                 if(poseEstimate.getX() <= shootingLineX) {
-                    drive.turnAsync(Angle.normDelta(drive.headingFromPoint(goalXPos, goalYPos) - poseEstimate.getHeading()));
+                    drive.turnAsync(Angle.normDelta(drive.headingFromPoint(currentXPos, currentYPos) - poseEstimate.getHeading()));
                 } else {
                     Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
-                            .lineToLinearHeading(new Pose2d(shootingLineX, poseEstimate.getY(), drive.headingFromPoints(goalXPos, goalYPos, shootingLineX, poseEstimate.getY())))
+                            .lineToLinearHeading(new Pose2d(shootingLineX, poseEstimate.getY(), drive.headingFromPoints(currentXPos, currentYPos, shootingLineX, poseEstimate.getY())))
                             .build();
                     drive.followTrajectoryAsync(trajectory);
                 }
@@ -678,6 +699,10 @@ public class RoadrunnerTeleOp extends LinearOpMode {
         dpadPrevState = dpadCurrentSate;
         prevAState = currentAState;
         prevBState = currentBState;
+
+        if(gamepad1.left_trigger != 0 && gamepad1.right_trigger != 0 && gamepad1.x) {
+            drive.setPoseEstimate(new Pose2d(60.5, 14.5, 0));
+        }
     }
 
     private void InitializeHardwaremap() {
