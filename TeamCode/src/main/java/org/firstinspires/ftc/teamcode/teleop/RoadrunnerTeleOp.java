@@ -18,6 +18,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 
+import org.firstinspires.ftc.teamcode.Roadrunner.PoseStorage;
 import org.firstinspires.ftc.teamcode.Roadrunner.drive.SampleMecanumDriveCancelable;
 import org.firstinspires.ftc.teamcode.Roadrunner.util.RoadrunnerPoint;
 
@@ -165,7 +166,8 @@ public class RoadrunnerTeleOp extends LinearOpMode {
         ));
 
         // Set your initial pose to x: 10, y: 10, facing 90 degrees
-        drive.setPoseEstimate(new Pose2d(-62, -26, Math.toRadians(0)));
+        //drive.setPoseEstimate(new Pose2d(-62, -26, Math.toRadians(0)));
+        drive.setPoseEstimate(PoseStorage.currentPose);
 
         telemetry.addData("Status", "Init Complete");
         telemetry.update();
