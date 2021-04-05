@@ -207,7 +207,7 @@ public class NewAuton extends LinearOpMode {
         }
 
         if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
-            setShooterRPM(3650);
+            setShooterRPM(3300);
             liftUpRingKnocker();
             drive.followTrajectory(startToPowershotPos);
             Flick();
@@ -289,7 +289,7 @@ public class NewAuton extends LinearOpMode {
         wobbleClaw.setPosition(1);
         wobbleClaw2.setPosition(1);
         backPlate.setPosition(0);
-        flicker.setPosition(1);
+        flicker.setPosition(0.23);
 
         ringKnocker.setPosition(0);
         wobbleLifter.setPosition(0.66);
@@ -315,11 +315,11 @@ public class NewAuton extends LinearOpMode {
     void Flick() {
         flickerStartTime = System.nanoTime();
         flicker.setPosition(0);
-        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 0.5 && opModeIsActive() && !isStopRequested()) {
+        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 0.2 && opModeIsActive() && !isStopRequested()) {
             sleep(10);
         }
-        flicker.setPosition(1);
-        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 1 && opModeIsActive() && !isStopRequested()) {
+        flicker.setPosition(0.23);
+        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 0.4 && opModeIsActive() && !isStopRequested()) {
             sleep(10);
         }
     }

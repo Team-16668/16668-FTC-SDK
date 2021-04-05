@@ -35,6 +35,7 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 
+import org.firstinspires.ftc.teamcode.Roadrunner.PoseStorage;
 import org.firstinspires.ftc.teamcode.Roadrunner.util.DashboardUtil;
 import org.firstinspires.ftc.teamcode.Roadrunner.util.LynxModuleUtil;
 
@@ -61,6 +62,8 @@ import static org.firstinspires.ftc.teamcode.Roadrunner.drive.DriveConstants.kV;
  */
 @Config
 public class SampleMecanumDriveCancelable extends MecanumDrive {
+    public org.firstinspires.ftc.teamcode.Roadrunner.util.TelemetryPacket[] telemetryPackets = {};
+
     public static PIDCoefficients TRANSLATIONAL_PID = new PIDCoefficients(8, 0, 0.011);
     public static PIDCoefficients HEADING_PID = new PIDCoefficients(8, 0, 0);
 
@@ -316,6 +319,8 @@ public class SampleMecanumDriveCancelable extends MecanumDrive {
     public void update() {
         updatePoseEstimate();
 
+        PoseStorage.currentPose = getPoseEstimate();
+
         Pose2d currentPose = getPoseEstimate();
         Pose2d lastError = getLastError();
 
@@ -337,6 +342,10 @@ public class SampleMecanumDriveCancelable extends MecanumDrive {
         packet.put("xError", lastError.getX());
         packet.put("yError", lastError.getY());
         packet.put("headingError (deg)", Math.toDegrees(lastError.getHeading()));
+
+        for(int i=0; i<telemetryPackets.length; i++) {
+            packet.put(telemetryPackets[i].heading, telemetryPackets[i].content);
+        }
 
         switch (mode) {
             case IDLE:
