@@ -19,9 +19,20 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.Roadrunner.PoseStorage;
 import org.firstinspires.ftc.teamcode.Roadrunner.drive.SampleMecanumDriveCancelable;
 import org.firstinspires.ftc.teamcode.Roadrunner.util.RoadrunnerPoint;
+import org.firstinspires.ftc.teamcode.Roadrunner.util.TelemetryPacket;
+import org.firstinspires.ftc.teamcode.Vision.UGAdvancedHighGoalPipeline;
+import org.firstinspires.ftc.teamcode.Vision.UGAngleHighGoalPipeline;
+import org.firstinspires.ftc.teamcode.Vision.UGBasicHighGoalPipeline;
+import org.firstinspires.ftc.teamcode.Vision.UGRectRingPipeline;
+import org.firstinspires.ftc.teamcode.auto.NewAuton;
+import org.openftc.easyopencv.OpenCvCamera;
+import org.openftc.easyopencv.OpenCvCameraFactory;
+import org.openftc.easyopencv.OpenCvCameraRotation;
+import org.openftc.easyopencv.OpenCvWebcam;
 
 import java.util.concurrent.TimeUnit;
 
@@ -96,7 +107,7 @@ public class RoadrunnerTeleOp extends LinearOpMode {
     public static double totalFlickTime = 0.6;
 
     //Logic for Shooter
-    public static double normalTargetRPM = 3650;
+    public static double normalTargetRPM = 3750;
     double shooterStartTime,
             powerShotTargetRPM = 3800,
             shooterTargetRPM = normalTargetRPM;
@@ -126,7 +137,31 @@ public class RoadrunnerTeleOp extends LinearOpMode {
 
     SampleMecanumDriveCancelable drive;
 
+    //Vision stuff
+    OpenCvWebcam webcam;
+    UGAngleHighGoalPipeline pipeline;
+
+    boolean currentYState, prevYState;
+    boolean shouldFollow = true;
+
     public void runOpMode() {
+
+        int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+        webcam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "goal_webcam"), cameraMonitorViewId);
+        pipeline = new UGAngleHighGoalPipeline(60, 0, 0);
+
+        webcam.setPipeline(pipeline);
+
+        webcam.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener()
+        {
+            @Override
+            public void onOpened()
+            {
+                webcam.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);
+            }
+        });
+
+        dashboard.startCameraStream(webcam, 0);
 
         telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
 
@@ -156,7 +191,7 @@ public class RoadrunnerTeleOp extends LinearOpMode {
         shooterLut.add(52+distanceToShooter,4250);
         shooterLut.add(58+distanceToShooter,4350);
         //This one might need to be changed if the distance from far away is completely wack.
-        shooterLut.add(200,4350);
+        shooterLut.add(500,4350);
         shooterLut.createLUT();
 
         //Set the Localizer/Positioning System
@@ -197,6 +232,8 @@ public class RoadrunnerTeleOp extends LinearOpMode {
                 }
             }
 
+            VisionCode();
+
             //Do all functions to run the motors at the right speeds
             DriveStateRoutine();
 
@@ -226,6 +263,10 @@ public class RoadrunnerTeleOp extends LinearOpMode {
 
             Telemetry();
         }
+        webcam.stopStreaming();
+    }
+
+    private void VisionCode() {
 
     }
 
@@ -244,13 +285,16 @@ public class RoadrunnerTeleOp extends LinearOpMode {
     }
 
     void Telemetry() {
-        Pose2d myPose = drive.getPoseEstimate();
-
-        telemetry.addData("velocity", (shooter.getVelocity()/28)*60);
-        telemetry.addData("target velocity", shooterTargetRPM);
-        telemetry.addData("shooter mode", shooterState);
-        telemetry.addData("Drive mode", driveState);
-        telemetry.addData("Powershot", currentPowerShot);
+        drive.telemetryPackets = new TelemetryPacket[]{
+        new TelemetryPacket("velocity", Double.toString((shooter.getVelocity() / 28) * 60)),
+        new TelemetryPacket("target velocity", Double.toString(shooterTargetRPM)),
+        new TelemetryPacket("shooter mode", shooterState.name()),
+        new TelemetryPacket("Drive mode", driveState.name()),
+        new TelemetryPacket("Powershot", currentPowerShot.name()),
+        new TelemetryPacket("Goal visisble", Boolean.toString(pipeline.isRedVisible())),
+        new TelemetryPacket("Goal pitch", Double.toString(pipeline.calculatePitch(UGAngleHighGoalPipeline.Target.RED))),
+        new TelemetryPacket("Goal yaw", Double.toString(pipeline.calculateYaw(UGAngleHighGoalPipeline.Target.RED)))
+        };
     }
 
     void IntakeTimer() {
@@ -626,27 +670,13 @@ public class RoadrunnerTeleOp extends LinearOpMode {
             if(driveState == DriveState.DRIVER_CONTROL) {
                 turnStep = 1;
                 driveState = DriveState.NORMAL_AUTOMATIC;
-
-                if(poseEstimate.getY() <= goalYPos) {
-                    currentXPos = rightGoalXPos;
-                    currentYPos = rightGoalYPos;
-                } else {
-                    currentXPos = goalXPos;
-                    currentYPos = goalYPos;
-                }
-
-                if(poseEstimate.getX() <= shootingLineX) {
-                    drive.turnAsync(Angle.normDelta(drive.headingFromPoint(currentXPos, currentYPos) - poseEstimate.getHeading()));
-                } else {
-                    Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
-                            .lineToLinearHeading(new Pose2d(shootingLineX, poseEstimate.getY(), drive.headingFromPoints(currentXPos, currentYPos, shootingLineX, poseEstimate.getY())))
-                            .build();
-                    drive.followTrajectoryAsync(trajectory);
-                }
+                NormalAutomaticCalculations(poseEstimate);
             } else if(driveState == DriveState.NORMAL_AUTOMATIC || driveState == DriveState.POWERSHOT_AUTOMATIC) {
                 driveState = DriveState.DRIVER_CONTROL;
                 drive.cancelFollowing();
             }
+
+
         }
 
         if(currentBState && currentBState != prevBState) {
@@ -704,12 +734,64 @@ public class RoadrunnerTeleOp extends LinearOpMode {
             }
         }
 
+        currentYState = gamepad1.y;
+        if(currentYState && currentYState != prevYState) {
+            if(driveState != DriveState.BUSY) {
+                drive.cancelFollowing();
+                driveState = DriveState.BUSY;
+            } else if(driveState == DriveState.BUSY) {
+                driveState = DriveState.DRIVER_CONTROL;
+                drive.cancelFollowing();
+                shouldFollow = true;
+            }
+        }
+        prevYState = currentYState;
+        if(driveState == DriveState.BUSY) {
+            driveState = driveState.BUSY;
+            double yaw = pipeline.calculateYaw(UGAngleHighGoalPipeline.Target.RED);
+            if(!drive.isBusy() && shouldFollow) {
+                if(pipeline.isRedVisible()) {
+                    if(yaw >= 0) {
+                        drive.turnAsync(-Math.toRadians(yaw+5));
+                    }else if(yaw <= 0) {
+                        drive.turnAsync(-Math.toRadians(yaw));
+                    }
+                    shouldFollow = false;
+                }
+            }
+            if(!drive.isBusy() && !shouldFollow) {
+                driveState = DriveState.DRIVER_CONTROL;
+                shouldFollow = true;
+            }
+        }
+
         dpadPrevState = dpadCurrentSate;
         prevAState = currentAState;
         prevBState = currentBState;
 
         if(gamepad1.left_trigger != 0 && gamepad1.right_trigger != 0 && gamepad1.x) {
             drive.setPoseEstimate(new Pose2d(60.5, 14.5, 0));
+        }
+    }
+
+    private void NormalAutomaticCalculations(Pose2d poseEstimate) {
+        if(poseEstimate.getY() <= goalYPos) {
+            currentXPos = rightGoalXPos;
+            currentYPos = rightGoalYPos;
+        } else {
+            currentXPos = goalXPos;
+            currentYPos = goalYPos;
+        }
+
+        if(poseEstimate.getX() <= shootingLineX) {
+            //This runs if we're already behing the shooing line
+            drive.turnAsync(Angle.normDelta(drive.headingFromPoint(currentXPos, currentYPos) - poseEstimate.getHeading()));
+        } else {
+            //This rusn if we're in front of the shooting line
+            Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
+                    .lineToLinearHeading(new Pose2d(shootingLineX, poseEstimate.getY(), drive.headingFromPoints(currentXPos, currentYPos, shootingLineX, poseEstimate.getY())))
+                    .build();
+            drive.followTrajectoryAsync(trajectory);
         }
     }
 
@@ -768,7 +850,7 @@ public class RoadrunnerTeleOp extends LinearOpMode {
 
     private enum ClawState {Open, Closed}
 
-    private enum DriveState {DRIVER_CONTROL, NORMAL_AUTOMATIC, POWERSHOT_AUTOMATIC}
+    private enum DriveState {DRIVER_CONTROL, NORMAL_AUTOMATIC, POWERSHOT_AUTOMATIC, BUSY}
 
     private enum Powershot {Left, Center, Right}
 

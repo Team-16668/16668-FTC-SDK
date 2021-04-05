@@ -35,6 +35,7 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 
+import org.firstinspires.ftc.teamcode.Roadrunner.PoseStorage;
 import org.firstinspires.ftc.teamcode.Roadrunner.util.DashboardUtil;
 import org.firstinspires.ftc.teamcode.Roadrunner.util.LynxModuleUtil;
 
@@ -304,6 +305,8 @@ public class SampleMecanumDrive extends MecanumDrive {
 
     public void update() {
         updatePoseEstimate();
+
+        PoseStorage.currentPose = getPoseEstimate();
 
         Pose2d currentPose = getPoseEstimate();
         Pose2d lastError = getLastError();
