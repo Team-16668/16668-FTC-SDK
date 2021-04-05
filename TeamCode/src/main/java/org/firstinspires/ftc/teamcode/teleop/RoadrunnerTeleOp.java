@@ -24,11 +24,7 @@ import org.firstinspires.ftc.teamcode.Roadrunner.PoseStorage;
 import org.firstinspires.ftc.teamcode.Roadrunner.drive.SampleMecanumDriveCancelable;
 import org.firstinspires.ftc.teamcode.Roadrunner.util.RoadrunnerPoint;
 import org.firstinspires.ftc.teamcode.Roadrunner.util.TelemetryPacket;
-import org.firstinspires.ftc.teamcode.Vision.UGAdvancedHighGoalPipeline;
 import org.firstinspires.ftc.teamcode.Vision.UGAngleHighGoalPipeline;
-import org.firstinspires.ftc.teamcode.Vision.UGBasicHighGoalPipeline;
-import org.firstinspires.ftc.teamcode.Vision.UGRectRingPipeline;
-import org.firstinspires.ftc.teamcode.auto.NewAuton;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
@@ -57,6 +53,7 @@ public class RoadrunnerTeleOp extends LinearOpMode {
     ShooterState shooterState = ShooterState.Normal;
     ClawState clawState = ClawState.Closed;
     WobbleState wobbleState = WobbleState.Initial;
+    AutomaticState automaticState = AutomaticState.GoToLine;
 
     //Global Game State Variable
     FtcDashboard dashboard = FtcDashboard.getInstance();
@@ -73,11 +70,10 @@ public class RoadrunnerTeleOp extends LinearOpMode {
     boolean dpadRight;
     boolean dpadCurrentSate;
     boolean dpadPrevState;
-    RoadrunnerPoint powerShotShootingPoint = new RoadrunnerPoint(-10, -10);
-    RoadrunnerPoint powerShotTargetPointLeft = new RoadrunnerPoint(72, -10);
-    RoadrunnerPoint powerShotTargetPointCenter = new RoadrunnerPoint(72, -20);
-    RoadrunnerPoint powerShotTargetPointRight = new RoadrunnerPoint(72, -30);
-    RoadrunnerPoint currentPowerShotTargetPoint = new RoadrunnerPoint(powerShotTargetPointLeft.x, powerShotTargetPointLeft.y);
+    RoadrunnerPoint powerShotShootingPointLeft = new RoadrunnerPoint(-10, -11);
+    RoadrunnerPoint powerShotShootingPointCenter = new RoadrunnerPoint(-10, -19);
+    RoadrunnerPoint powerShotShootingPointRight = new RoadrunnerPoint(-10, -27);
+    RoadrunnerPoint currentPowerShotTargetPoint = new RoadrunnerPoint(powerShotShootingPointLeft.x, powerShotShootingPointLeft.y);
 
     //Logic for Odometry
     boolean currentAState = false;
@@ -104,10 +100,10 @@ public class RoadrunnerTeleOp extends LinearOpMode {
     boolean firstReturn = true,
             tryFLick = false;
 
-    public static double totalFlickTime = 0.6;
+    public static double totalFlickTime = 0.4;
 
     //Logic for Shooter
-    public static double normalTargetRPM = 3750;
+    public static double normalTargetRPM = 3700;
     double shooterStartTime,
             powerShotTargetRPM = 3800,
             shooterTargetRPM = normalTargetRPM;
@@ -293,7 +289,8 @@ public class RoadrunnerTeleOp extends LinearOpMode {
         new TelemetryPacket("Powershot", currentPowerShot.name()),
         new TelemetryPacket("Goal visisble", Boolean.toString(pipeline.isRedVisible())),
         new TelemetryPacket("Goal pitch", Double.toString(pipeline.calculatePitch(UGAngleHighGoalPipeline.Target.RED))),
-        new TelemetryPacket("Goal yaw", Double.toString(pipeline.calculateYaw(UGAngleHighGoalPipeline.Target.RED)))
+        new TelemetryPacket("Goal yaw", Double.toString(pipeline.calculateYaw(UGAngleHighGoalPipeline.Target.RED))),
+        new TelemetryPacket("Automatic State", automaticState.name())
         };
     }
 
@@ -646,13 +643,7 @@ public class RoadrunnerTeleOp extends LinearOpMode {
         if(driveState == DriveState.DRIVER_CONTROL) {
             DriveCode();
         }else if(driveState == DriveState.NORMAL_AUTOMATIC){
-            if(!drive.isBusy() && turnStep == 1) {
-                drive.turnAsync(Angle.normDelta(drive.headingFromPoint(currentXPos, currentYPos) - poseEstimate.getHeading()));
-                turnStep = 2;
-            } else if(!drive.isBusy() && turnStep == 2) {
-                turnStep = 1;
-                driveState = DriveState.DRIVER_CONTROL;
-            }
+            NormalAutomaticLoop(poseEstimate);
         }else if(driveState == DriveState.POWERSHOT_AUTOMATIC) {
             if(!drive.isBusy() && turnStep == 1) {
                 turnStep = 2;
@@ -670,34 +661,56 @@ public class RoadrunnerTeleOp extends LinearOpMode {
             if(driveState == DriveState.DRIVER_CONTROL) {
                 turnStep = 1;
                 driveState = DriveState.NORMAL_AUTOMATIC;
+                shooterState = ShooterState.Normal;
                 NormalAutomaticCalculations(poseEstimate);
             } else if(driveState == DriveState.NORMAL_AUTOMATIC || driveState == DriveState.POWERSHOT_AUTOMATIC) {
                 driveState = DriveState.DRIVER_CONTROL;
                 drive.cancelFollowing();
             }
-
-
         }
 
         if(currentBState && currentBState != prevBState) {
             if(driveState == DriveState.DRIVER_CONTROL) {
                 driveState = DriveState.POWERSHOT_AUTOMATIC;
+                shooterState = ShooterState.PowerShot;
                 turnStep = 1;
 
-                if(currentPowerShot == Powershot.Left) currentPowerShotTargetPoint = powerShotTargetPointLeft;
-                else if(currentPowerShot == Powershot.Center) currentPowerShotTargetPoint = powerShotTargetPointCenter;
-                else if(currentPowerShot == Powershot.Right) currentPowerShotTargetPoint = powerShotTargetPointRight;
+                if(currentPowerShot == Powershot.Left) currentPowerShotTargetPoint = powerShotShootingPointLeft;
+                else if(currentPowerShot == Powershot.Center) currentPowerShotTargetPoint = powerShotShootingPointCenter;
+                else if(currentPowerShot == Powershot.Right) currentPowerShotTargetPoint = powerShotShootingPointRight;
 
                 Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
-                        .lineToLinearHeading(new Pose2d(powerShotShootingPoint.x, powerShotShootingPoint.y,
-                                drive.headingFromPoints(currentPowerShotTargetPoint.x, currentPowerShotTargetPoint.y,
-                                        powerShotShootingPoint.x, powerShotShootingPoint.y)))
+                        .lineToLinearHeading(new Pose2d(powerShotShootingPointLeft.x, powerShotShootingPointLeft.y,0))
                         .build();
-
                 drive.followTrajectoryAsync(trajectory);
             } else if (driveState == DriveState.POWERSHOT_AUTOMATIC || driveState == DriveState.NORMAL_AUTOMATIC) {
                 driveState = DriveState.DRIVER_CONTROL;
                 drive.cancelFollowing();
+            }
+        }
+        currentYState = gamepad1.y;
+        if(currentYState && currentYState != prevYState) {
+            if(driveState  != DriveState.ANGLEVISION) {
+                drive.cancelFollowing();
+                driveState = DriveState.ANGLEVISION;
+            } else if(driveState == DriveState.ANGLEVISION) {
+                driveState = DriveState.DRIVER_CONTROL;
+                drive.cancelFollowing();
+                shouldFollow = true;
+            }
+        }
+        prevYState = currentYState;
+        if(driveState == DriveState.ANGLEVISION) {
+            double yaw = pipeline.calculateYaw(UGAngleHighGoalPipeline.Target.RED);
+            if(!drive.isBusy() && shouldFollow) {
+                if(pipeline.isRedVisible()) {
+                    if(yaw >= 0) {
+                        drive.turnAsync(-Math.toRadians(yaw+5));
+                    }else if(yaw <=0) {
+                        drive.turnAsync(-Math.toRadians(yaw));
+                    }
+                    shouldFollow = false;
+                }
             }
         }
 
@@ -712,56 +725,33 @@ public class RoadrunnerTeleOp extends LinearOpMode {
                     //Do nothing
                 } else if(currentPowerShot == Powershot.Center) {
                     currentPowerShot = Powershot.Left;
-                    drive.turnAsync(Angle.normDelta(drive.headingFromPoint(powerShotTargetPointLeft.x, powerShotTargetPointLeft.y)
-                            - poseEstimate.getHeading()));
+                    Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
+                            .lineToLinearHeading(new Pose2d(powerShotShootingPointLeft.x, powerShotShootingPointLeft.y,0))
+                            .build();
+                    drive.followTrajectoryAsync(trajectory);
                 } else if(currentPowerShot == Powershot.Right) {
                     currentPowerShot = Powershot.Center;
-                    drive.turnAsync(Angle.normDelta(drive.headingFromPoint(powerShotTargetPointCenter.x, powerShotTargetPointCenter.y)
-                            - poseEstimate.getHeading()));
+                    Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
+                            .lineToLinearHeading(new Pose2d(powerShotShootingPointCenter.x, powerShotShootingPointCenter.y,0))
+                            .build();
+                    drive.followTrajectoryAsync(trajectory);
                 }
             } else if(dpadRight) {
                 if(currentPowerShot == Powershot.Left) {
                     currentPowerShot = Powershot.Center;
-                    drive.turnAsync(Angle.normDelta(drive.headingFromPoint(powerShotTargetPointCenter.x, powerShotTargetPointCenter.y)
-                            - poseEstimate.getHeading()));
+                    Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
+                            .lineToLinearHeading(new Pose2d(powerShotShootingPointCenter.x, powerShotShootingPointCenter.y,0))
+                            .build();
+                    drive.followTrajectoryAsync(trajectory);
                 } else if(currentPowerShot == Powershot.Center) {
                     currentPowerShot = Powershot.Right;
-                    drive.turnAsync(Angle.normDelta(drive.headingFromPoint(powerShotTargetPointRight.x, powerShotTargetPointRight.y)
-                            - poseEstimate.getHeading()));
+                    Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
+                            .lineToLinearHeading(new Pose2d(powerShotShootingPointRight.x, powerShotShootingPointRight.y,0))
+                            .build();
+                    drive.followTrajectoryAsync(trajectory);
                 } else if(currentPowerShot == Powershot.Right) {
                     //Do nothing
                 }
-            }
-        }
-
-        currentYState = gamepad1.y;
-        if(currentYState && currentYState != prevYState) {
-            if(driveState != DriveState.BUSY) {
-                drive.cancelFollowing();
-                driveState = DriveState.BUSY;
-            } else if(driveState == DriveState.BUSY) {
-                driveState = DriveState.DRIVER_CONTROL;
-                drive.cancelFollowing();
-                shouldFollow = true;
-            }
-        }
-        prevYState = currentYState;
-        if(driveState == DriveState.BUSY) {
-            driveState = driveState.BUSY;
-            double yaw = pipeline.calculateYaw(UGAngleHighGoalPipeline.Target.RED);
-            if(!drive.isBusy() && shouldFollow) {
-                if(pipeline.isRedVisible()) {
-                    if(yaw >= 0) {
-                        drive.turnAsync(-Math.toRadians(yaw+5));
-                    }else if(yaw <= 0) {
-                        drive.turnAsync(-Math.toRadians(yaw));
-                    }
-                    shouldFollow = false;
-                }
-            }
-            if(!drive.isBusy() && !shouldFollow) {
-                driveState = DriveState.DRIVER_CONTROL;
-                shouldFollow = true;
             }
         }
 
@@ -774,6 +764,28 @@ public class RoadrunnerTeleOp extends LinearOpMode {
         }
     }
 
+    private void NormalAutomaticLoop(Pose2d poseEstimate) {
+        if(!drive.isBusy() && automaticState == AutomaticState.GoToLine) {
+            automaticState = AutomaticState.AngleOdo;
+        }else if(!drive.isBusy() && automaticState == AutomaticState.AngleOdo) {
+            drive.turnAsync(Angle.normDelta(drive.headingFromPoint(currentXPos, currentYPos) - poseEstimate.getHeading()));
+            automaticState = AutomaticState.AngleVision;
+        } else if(!drive.isBusy() && automaticState == AutomaticState.AngleVision) {
+            double yaw = pipeline.calculateYaw(UGAngleHighGoalPipeline.Target.RED);
+            if(pipeline.isRedVisible()) {
+                if(yaw >= 0) {
+                    drive.turnAsync(-Math.toRadians(yaw+5));
+                }else if(yaw <= 0) {
+                    drive.turnAsync(-Math.toRadians(yaw));
+                }
+                shouldFollow = false;
+            }
+            automaticState = AutomaticState.Finish;
+        } else if(!drive.isBusy() && automaticState == AutomaticState.Finish) {
+            driveState = DriveState.DRIVER_CONTROL;
+        }
+    }
+
     private void NormalAutomaticCalculations(Pose2d poseEstimate) {
         if(poseEstimate.getY() <= goalYPos) {
             currentXPos = rightGoalXPos;
@@ -783,11 +795,17 @@ public class RoadrunnerTeleOp extends LinearOpMode {
             currentYPos = goalYPos;
         }
 
-        if(poseEstimate.getX() <= shootingLineX) {
-            //This runs if we're already behing the shooing line
-            drive.turnAsync(Angle.normDelta(drive.headingFromPoint(currentXPos, currentYPos) - poseEstimate.getHeading()));
+        automaticState = AutomaticState.GoToLine;
+        //This runs if we're already behing the shooing line
+        if(poseEstimate.getX() <= shootingLineX && poseEstimate.getX() >= -24 && poseEstimate.getY() <= 24 && poseEstimate.getY() >= -48) {
+            if((poseEstimate.getHeading() <= Math.toRadians(45) || poseEstimate.getHeading() >= Math.toRadians(315)) && pipeline.isRedVisible()) {
+                automaticState = AutomaticState.AngleVision;
+            } else {
+                automaticState = AutomaticState.AngleOdo;
+            }
         } else {
             //This rusn if we're in front of the shooting line
+            automaticState = AutomaticState.GoToLine;
             Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
                     .lineToLinearHeading(new Pose2d(shootingLineX, poseEstimate.getY(), drive.headingFromPoints(currentXPos, currentYPos, shootingLineX, poseEstimate.getY())))
                     .build();
@@ -850,10 +868,12 @@ public class RoadrunnerTeleOp extends LinearOpMode {
 
     private enum ClawState {Open, Closed}
 
-    private enum DriveState {DRIVER_CONTROL, NORMAL_AUTOMATIC, POWERSHOT_AUTOMATIC, BUSY}
+    private enum DriveState {DRIVER_CONTROL, NORMAL_AUTOMATIC, POWERSHOT_AUTOMATIC, ANGLEVISION}
 
     private enum Powershot {Left, Center, Right}
 
     private enum WobbleState {Initial, DownOpen, VerticalClosed, DropWobble, RetractedClosed}
+
+    private enum AutomaticState {GoToLine, AngleOdo, AngleVision, Finish}
 
 }
