@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
 import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
@@ -24,6 +25,7 @@ import org.firstinspires.ftc.teamcode.Roadrunner.util.RoadrunnerPoint;
 
 import java.util.concurrent.TimeUnit;
 
+@Config
 @TeleOp(name= "Roadrunner TeleOp")
 public class RoadrunnerTeleOp extends LinearOpMode {
     //Initial Variable initialization
@@ -44,8 +46,6 @@ public class RoadrunnerTeleOp extends LinearOpMode {
     ShooterState shooterState = ShooterState.Normal;
     ClawState clawState = ClawState.Closed;
     WobbleState wobbleState = WobbleState.Initial;
-
-
 
     //Global Game State Variable
     FtcDashboard dashboard = FtcDashboard.getInstance();
@@ -93,9 +93,11 @@ public class RoadrunnerTeleOp extends LinearOpMode {
     boolean firstReturn = true,
             tryFLick = false;
 
+    public static double totalFlickTime = 0.6;
+
     //Logic for Shooter
+    public static double normalTargetRPM = 3650;
     double shooterStartTime,
-            normalTargetRPM = 4400,
             powerShotTargetRPM = 3800,
             shooterTargetRPM = normalTargetRPM;
     InterpLUT shooterLut;
@@ -162,7 +164,7 @@ public class RoadrunnerTeleOp extends LinearOpMode {
 
         batteryVoltageSensor = hardwareMap.voltageSensor.iterator().next();
         shooter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(
-                50, 0, 10, 15 * 12 / batteryVoltageSensor.getVoltage()
+                50, 0, 10, 13 /* * 12 / batteryVoltageSensor.getVoltage() */
         ));
 
         // Set your initial pose to x: 10, y: 10, facing 90 degrees
@@ -210,9 +212,9 @@ public class RoadrunnerTeleOp extends LinearOpMode {
                 //shooter.setVelocity((shooterTargetRPM*28)/60);
                 Shooting();
 
-            } else {
-                Intake();
             }
+
+            Intake();
 
             Flick();
 
@@ -233,7 +235,8 @@ public class RoadrunnerTeleOp extends LinearOpMode {
             shooterTargetRPM = drive.distanceFromPoint(myPose.getX(), myPose.getY(), goalXPos, goalYPos);
             double shooterVelocity = shooterLut.get(drive.distanceFromPoint(myPose.getX(), myPose.getY(), goalXPos, goalYPos));
             //double shooterVelocity = shooterLut.get(4);
-            shooter.setVelocity((shooterVelocity*28)/60);
+            //shooter.setVelocity((shooterVelocity*28)/60);
+            shooter.setVelocity(normalTargetRPM*28/60);
         } else if(shooterState == ShooterState.PowerShot) {
             shooterTargetRPM = powerShotTargetRPM;
             shooter.setVelocity((powerShotTargetRPM*28)/60);
@@ -248,10 +251,6 @@ public class RoadrunnerTeleOp extends LinearOpMode {
         telemetry.addData("shooter mode", shooterState);
         telemetry.addData("Drive mode", driveState);
         telemetry.addData("Powershot", currentPowerShot);
-        telemetry.addData("x", myPose.getX());
-        telemetry.addData("y", myPose.getY());
-        telemetry.addData("heading", myPose.getHeading());
-        telemetry.update();
     }
 
     void IntakeTimer() {
@@ -289,11 +288,15 @@ public class RoadrunnerTeleOp extends LinearOpMode {
 
         if(intakeCurrentButtonState != intakePrevButtonState && intakeCurrentButtonState) {
             if (intakeDirection == IntakeDirection.In) {
-                intake.setPower(-1);
+                if(gameState == GameState.Intake) {
+                    intake.setPower(-1);
+                }
                 intakeDirection = IntakeDirection.Out;
                 lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.RED);
             } else if (intakeDirection == IntakeDirection.Out) {
-                intake.setPower(1);
+                if(gameState==GameState.Intake) {
+                    intake.setPower(1);
+                }
                 intakeDirection = IntakeDirection.In;
                 lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
             }
@@ -303,9 +306,9 @@ public class RoadrunnerTeleOp extends LinearOpMode {
 
     void Flick() {
         timeSinceFlicker = (System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1);
-        if(timeSinceFlicker >= 0.5) {
+        if(timeSinceFlicker >= totalFlickTime / 2) {
             if(firstReturn) {
-                flicker.setPosition(1);
+                flicker.setPosition(0.23);
                 firstReturn = false;
             }
         }
@@ -313,7 +316,7 @@ public class RoadrunnerTeleOp extends LinearOpMode {
         //tryFLick = gamepad1.left_trigger != 0;
         //For two players
         tryFLick = gamepad2.left_bumper || gamepad2.right_bumper;
-        if (timeSinceFlicker >= 1 && tryFLick) {
+        if (timeSinceFlicker >= totalFlickTime && tryFLick) {
             flicker.setPosition(0);
             flickerStartTime = System.nanoTime();
             firstReturn = true;
@@ -342,10 +345,12 @@ public class RoadrunnerTeleOp extends LinearOpMode {
 
         gameState = GameState.Intake;
 
-        intakeDirection = IntakeDirection.In;
-
         shooter.setPower(0);
-        intake.setPower(1);
+        if(intakeDirection == IntakeDirection.In) {
+            intake.setPower(1);
+        }else {
+            intake.setPower(-1);
+        }
         intakeServo.setPower(1);
     }
 
@@ -355,9 +360,10 @@ public class RoadrunnerTeleOp extends LinearOpMode {
         gameState = GameState.Shooting;
         shooter.setVelocity((shooterTargetRPM*28)/60);
 
-        intake.setPower(0);
-
         shooterStartTime = System.nanoTime();
+
+        intakeDirection = IntakeDirection.In;
+        lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
 
         keepIntakeOn = true;
         intake.setPower(1);
@@ -748,7 +754,7 @@ public class RoadrunnerTeleOp extends LinearOpMode {
         wobbleClaw2.setPosition(1);
 
         backPlate.setPosition(1);
-        flicker.setPosition(1);
+        flicker.setPosition(0.23);
 
         wobbleLifter.setPosition(0.66);
         ringKnocker.setPosition(0);

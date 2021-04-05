@@ -18,7 +18,9 @@ import org.firstinspires.ftc.teamcode.RandomTools.shooterVeloTuning.TuningContro
 @Config
 @TeleOp
 public class VeloPIDTuner extends LinearOpMode {
-    public static PIDFCoefficients MOTOR_VELO_PID = new PIDFCoefficients(50, 0, 10, 15);
+    public static PIDFCoefficients MOTOR_VELO_PID = new PIDFCoefficients(190, 0, 10, 13);
+
+    public static double currentTargetRPM = 4400;
 
     private final FtcDashboard dashboard = FtcDashboard.getInstance();
 
@@ -66,11 +68,14 @@ public class VeloPIDTuner extends LinearOpMode {
 
         while (!isStopRequested() && opModeIsActive()) {
             double targetVelo = tuningController.update();
+            targetVelo = currentTargetRPM;
             myMotor.setVelocity(targetVelo);
+            //myMotor.setVelocity(targetVelo*28/60);
 
-            telemetry.addData("targetVelocity", targetVelo);
+            telemetry.addData("targetVelocity", targetVelo*60/28);
+            //telemetry.addData("targetVelocity", targetVelo);
 
-            double motorVelo = myMotor.getVelocity();
+            double motorVelo = myMotor.getVelocity()*60/28;
             telemetry.addData("velocity", motorVelo);
             telemetry.addData("power", myMotor.getPower());
             telemetry.addData("error", targetVelo - motorVelo);

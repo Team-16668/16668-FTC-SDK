@@ -289,7 +289,7 @@ public class NewAuton extends LinearOpMode {
         wobbleClaw.setPosition(1);
         wobbleClaw2.setPosition(1);
         backPlate.setPosition(0);
-        flicker.setPosition(1);
+        flicker.setPosition(0.23);
 
         ringKnocker.setPosition(0);
         wobbleLifter.setPosition(0.66);
@@ -318,8 +318,8 @@ public class NewAuton extends LinearOpMode {
         while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 0.5 && opModeIsActive() && !isStopRequested()) {
             sleep(10);
         }
-        flicker.setPosition(1);
-        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 1 && opModeIsActive() && !isStopRequested()) {
+        flicker.setPosition(0.23);
+        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 0.75 && opModeIsActive() && !isStopRequested()) {
             sleep(10);
         }
     }
