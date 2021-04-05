@@ -232,7 +232,6 @@ public class RoadrunnerTeleOp extends LinearOpMode {
             Pose2d myPose = drive.getPoseEstimate();
             shooterTargetRPM = drive.distanceFromPoint(myPose.getX(), myPose.getY(), goalXPos, goalYPos);
             double shooterVelocity = shooterLut.get(drive.distanceFromPoint(myPose.getX(), myPose.getY(), goalXPos, goalYPos));
-            //double shooterVelocity = shooterLut.get(4);
             shooter.setVelocity((shooterVelocity*28)/60);
         } else if(shooterState == ShooterState.PowerShot) {
             shooterTargetRPM = powerShotTargetRPM;
