@@ -103,9 +103,9 @@ public class RoadrunnerTeleOp extends LinearOpMode {
     public static double totalFlickTime = 0.4;
 
     //Logic for Shooter
-    public static double normalTargetRPM = 3700;
+    public static double normalTargetRPM = 3675;
+    public static double powerShotTargetRPM = 3300;
     double shooterStartTime,
-            powerShotTargetRPM = 3800,
             shooterTargetRPM = normalTargetRPM;
     InterpLUT shooterLut;
 
@@ -228,8 +228,6 @@ public class RoadrunnerTeleOp extends LinearOpMode {
                 }
             }
 
-            VisionCode();
-
             //Do all functions to run the motors at the right speeds
             DriveStateRoutine();
 
@@ -260,10 +258,6 @@ public class RoadrunnerTeleOp extends LinearOpMode {
             Telemetry();
         }
         webcam.stopStreaming();
-    }
-
-    private void VisionCode() {
-
     }
 
     private void Shooting() {
@@ -645,13 +639,6 @@ public class RoadrunnerTeleOp extends LinearOpMode {
         }else if(driveState == DriveState.NORMAL_AUTOMATIC){
             NormalAutomaticLoop(poseEstimate);
         }else if(driveState == DriveState.POWERSHOT_AUTOMATIC) {
-            if(!drive.isBusy() && turnStep == 1) {
-                turnStep = 2;
-                drive.turnAsync(Angle.normDelta(drive.headingFromPoint(currentPowerShotTargetPoint.x, currentPowerShotTargetPoint.y)
-                        - poseEstimate.getHeading()));
-            }else if(!drive.isBusy() && turnStep == 2) {
-                //turnStep = 1;
-            }
         }
 
         currentAState = gamepad1.a;
@@ -680,7 +667,7 @@ public class RoadrunnerTeleOp extends LinearOpMode {
                 else if(currentPowerShot == Powershot.Right) currentPowerShotTargetPoint = powerShotShootingPointRight;
 
                 Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
-                        .lineToLinearHeading(new Pose2d(powerShotShootingPointLeft.x, powerShotShootingPointLeft.y,0))
+                        .lineToLinearHeading(new Pose2d(currentPowerShotTargetPoint.x, currentPowerShotTargetPoint.y,0))
                         .build();
                 drive.followTrajectoryAsync(trajectory);
             } else if (driveState == DriveState.POWERSHOT_AUTOMATIC || driveState == DriveState.NORMAL_AUTOMATIC) {
@@ -718,7 +705,7 @@ public class RoadrunnerTeleOp extends LinearOpMode {
         dpadRight = gamepad1.dpad_right;
         dpadCurrentSate = dpadLeft || dpadRight;
 
-        if(dpadCurrentSate && dpadCurrentSate != dpadPrevState) {
+        if(dpadCurrentSate && dpadCurrentSate != dpadPrevState && driveState == DriveState.POWERSHOT_AUTOMATIC) {
             drive.cancelFollowing();
             if(dpadLeft) {
                 if(currentPowerShot == Powershot.Left) {
@@ -750,7 +737,7 @@ public class RoadrunnerTeleOp extends LinearOpMode {
                             .build();
                     drive.followTrajectoryAsync(trajectory);
                 } else if(currentPowerShot == Powershot.Right) {
-                    //Do nothing
+                    driveState = DriveState.DRIVER_CONTROL;
                 }
             }
         }
@@ -797,7 +784,7 @@ public class RoadrunnerTeleOp extends LinearOpMode {
 
         automaticState = AutomaticState.GoToLine;
         //This runs if we're already behing the shooing line
-        if(poseEstimate.getX() <= shootingLineX && poseEstimate.getX() >= -24 && poseEstimate.getY() <= 24 && poseEstimate.getY() >= -48) {
+        if(poseEstimate.getX() <= shootingLineX && poseEstimate.getX() >= -24 && poseEstimate.getY() <= 0 && poseEstimate.getY() >= -48) {
             if((poseEstimate.getHeading() <= Math.toRadians(45) || poseEstimate.getHeading() >= Math.toRadians(315)) && pipeline.isRedVisible()) {
                 automaticState = AutomaticState.AngleVision;
             } else {
@@ -806,8 +793,14 @@ public class RoadrunnerTeleOp extends LinearOpMode {
         } else {
             //This rusn if we're in front of the shooting line
             automaticState = AutomaticState.GoToLine;
+            double yPos = poseEstimate.getY();
+            if(yPos <= -48) {
+                yPos = -48;
+            }else if(yPos >=0) {
+                yPos = 0;
+            }
             Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
-                    .lineToLinearHeading(new Pose2d(shootingLineX, poseEstimate.getY(), drive.headingFromPoints(currentXPos, currentYPos, shootingLineX, poseEstimate.getY())))
+                    .lineToLinearHeading(new Pose2d(shootingLineX, yPos, drive.headingFromPoints(currentXPos, currentYPos, shootingLineX, yPos)))
                     .build();
             drive.followTrajectoryAsync(trajectory);
         }
