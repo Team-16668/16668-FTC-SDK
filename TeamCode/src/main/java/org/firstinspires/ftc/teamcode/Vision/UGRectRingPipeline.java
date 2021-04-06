@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.Vision;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
@@ -130,4 +131,6 @@ public class UGRectRingPipeline extends OpenCvPipeline {
     public void setRectangleHeight(int rectangleHeight) {
         this.rectangleHeight = rectangleHeight;
     }
+
+
 }

@@ -7,6 +7,8 @@ import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.acmerobotics.roadrunner.util.Angle;
 import com.arcrobotics.ftclib.util.InterpLUT;
+import com.arcrobotics.ftclib.vision.UGContourRingDetector;
+import com.arcrobotics.ftclib.vision.UGContourRingPipeline;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -156,6 +158,8 @@ public class RoadrunnerTeleOp extends LinearOpMode {
                 webcam.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);
             }
         });
+
+        UGContourRingPipeline pipeline2 = new UGContourRingPipeline();
 
         dashboard.startCameraStream(webcam, 0);
 
