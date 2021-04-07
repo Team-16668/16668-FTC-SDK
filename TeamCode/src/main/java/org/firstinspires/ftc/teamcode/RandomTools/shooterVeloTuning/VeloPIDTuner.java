@@ -69,11 +69,11 @@ public class VeloPIDTuner extends LinearOpMode {
         while (!isStopRequested() && opModeIsActive()) {
             double targetVelo = tuningController.update();
             targetVelo = currentTargetRPM;
-            myMotor.setVelocity(targetVelo);
-            //myMotor.setVelocity(targetVelo*28/60);
+            //myMotor.setVelocity(targetVelo);
+            myMotor.setVelocity(targetVelo*28/60);
 
-            telemetry.addData("targetVelocity", targetVelo*60/28);
-            //telemetry.addData("targetVelocity", targetVelo);
+            //telemetry.addData("targetVelocity", targetVelo*60/28);
+            telemetry.addData("targetVelocity", targetVelo);
 
             double motorVelo = myMotor.getVelocity()*60/28;
             telemetry.addData("velocity", motorVelo);

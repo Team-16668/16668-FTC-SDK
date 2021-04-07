@@ -5,6 +5,7 @@ import android.util.Log;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -38,8 +39,9 @@ import static java.lang.Math.toRadians;
     Run this OpMode and push all the buttons that you see to find out what they do. That should show you what most of the code does.
  */
 
-@TeleOp(name="Game Teleop")
-public class PrimaryGameTeleOp extends LinearOpMode {
+@TeleOp(name="Old Game Teleop")
+@Disabled
+public class OldTeleOp extends LinearOpMode {
     RevBlinkinLedDriver lights, lights2;
     DcMotor rightFront, rightBack, leftFront, leftBack, intake, wobbleArm;
     DcMotorEx shooter;

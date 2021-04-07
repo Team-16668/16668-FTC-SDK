@@ -3,6 +3,11 @@ package org.firstinspires.ftc.teamcode.auto;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.acmerobotics.roadrunner.trajectory.Trajectory;
+import com.acmerobotics.roadrunner.trajectory.constraints.AngularVelocityConstraint;
+import com.acmerobotics.roadrunner.trajectory.constraints.MecanumVelocityConstraint;
+import com.acmerobotics.roadrunner.trajectory.constraints.MinVelocityConstraint;
+import com.acmerobotics.roadrunner.trajectory.constraints.ProfileAccelerationConstraint;
+import com.acmerobotics.roadrunner.util.Angle;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -10,6 +15,7 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -17,6 +23,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.RandomTools.Vision.OpenCVWebcam;
 import org.firstinspires.ftc.teamcode.Roadrunner.PoseStorage;
+import org.firstinspires.ftc.teamcode.Roadrunner.drive.DriveConstants;
 import org.firstinspires.ftc.teamcode.Roadrunner.drive.SampleMecanumDrive;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -30,13 +37,14 @@ import org.openftc.easyopencv.OpenCvCameraRotation;
 import org.openftc.easyopencv.OpenCvPipeline;
 import org.openftc.easyopencv.OpenCvWebcam;
 
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 /*
  * This is an example of a more complex path to really test the tuning.
  */
-@Autonomous(group = "drive")
-public class NewAuton extends LinearOpMode {
+@Autonomous(name = "Auton", group = "drive")
+public class Auton extends LinearOpMode {
 
     //Ultimate Goal Specific Hardware
     DcMotor intake, wobbleArm;
@@ -57,8 +65,7 @@ public class NewAuton extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
-        telemetry.addData("Status", "Initializing");
-        telemetry.update();
+        setTelemetryData("Status", "Initializing");
 
         drive = new SampleMecanumDrive(hardwareMap);
 
@@ -66,25 +73,30 @@ public class NewAuton extends LinearOpMode {
 
         timer = new ElapsedTime();
         //Wonderful timer commands that are probably a lot better than what I have now.
+        /*
         timer.reset();
         timer.seconds();
+         */
 
         defineHardware();
         initialize();
-        //Zero ring trajectories
+
+        //Powershot Trajectories
+        setTelemetryData("Status", "Building Powershot trajectories");
         Trajectory startToPowershotPos = drive.trajectoryBuilder(new Pose2d(-62, -26, Math.toRadians(0)))
                 .lineToLinearHeading(new Pose2d(-10, -11, /*drive.headingFromPoints(72, -10,-10, -10)*/0))
                 .build();
-        telemetry.addData("Status", "1");
-        telemetry.update();
+
         Trajectory powershotPosToCenterPowershot = drive.trajectoryBuilder(startToPowershotPos.end())
-                .lineToLinearHeading(new Pose2d(-10, -19, /*drive.headingFromPoints(72, -10,-10, -10)*/0))
+                .lineToLinearHeading(new Pose2d(-10, -18, /*drive.headingFromPoints(72, -10,-10, -10)*/0))
                 .build();
 
         Trajectory powershotPosToRightPowershot = drive.trajectoryBuilder(powershotPosToCenterPowershot.end())
                 .lineToLinearHeading(new Pose2d(-10, -27, /*drive.headingFromPoints(72, -10,-10, -10)*/0))
                 .build();
 
+        //Zero Ring Trajectories
+        setTelemetryData("Status", "Building zero rings trajectories");
         Trajectory powerShotToWobble = drive.trajectoryBuilder(powershotPosToRightPowershot.end())
                 .lineToLinearHeading(new Pose2d(15, -53, Math.toRadians(90)))
                 .build();
@@ -93,13 +105,20 @@ public class NewAuton extends LinearOpMode {
                 .splineToLinearHeading(new Pose2d(15, -45, Math.toRadians(90)), 0)
                 .addDisplacementMarker(() -> { putWobbleLifterDown(); })
                 .splineToSplineHeading(new Pose2d(-22, -46, Math.toRadians(270)), 0)
-                .splineToSplineHeading(new Pose2d(-40, -46, Math.toRadians(270)),  0)
+                .splineToConstantHeading(new Vector2d(-40, -43),  0,  new MinVelocityConstraint(
+                                Arrays.asList(
+                                        new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
+                                        new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
+                                )
+                        ),
+                        new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
                 .build();
 
         Trajectory dropWobble2 = drive.trajectoryBuilder(wobbleToWobble2.end())
                 .lineToLinearHeading(new Pose2d(7, -45, 0))
                 .build();
 
+        /*
         Trajectory getAwayFromWobble2 = drive.trajectoryBuilder(dropWobble2.end())
                 .splineToConstantHeading(new Vector2d(3, -30), 0)
                 .addDisplacementMarker(() -> {
@@ -113,14 +132,30 @@ public class NewAuton extends LinearOpMode {
                 .addDisplacementMarker(() -> { liftBackplate(); stopIntake();})
                 .build();
 
-        Trajectory park = drive.trajectoryBuilder(getAwayFromWobble2.end())
-                .lineToConstantHeading(new Vector2d(0, -36))
+         */
+
+        Trajectory pickUpRings = drive.trajectoryBuilder(new Pose2d(7, -9, 0))
+                .addDisplacementMarker(() -> {
+                    putWobbleLifterUp();
+                    runIntakeForward();
+                    lowerBackplate();
+                    grabWobble();
+                })
+                .splineToSplineHeading(new Pose2d(52, -10, 0), 0)
+                .addDisplacementMarker(() -> {setShooterRPM(3675);})
+                .splineToSplineHeading(new Pose2d(-4, -36, 0), 0)
+                .addDisplacementMarker(() -> {
+                    liftBackplate(); stopIntake();
+                })
                 .build();
 
-        telemetry.addData("Status", "2");
-        telemetry.update();
+        Trajectory park = drive.trajectoryBuilder(pickUpRings.end())
+                .lineToConstantHeading(new Vector2d(9, -25))
+                .build();
+
 
         //4 Ring Trajectories
+        setTelemetryData("Status", "Building four ring trajectories");
         Trajectory startToShootingPos = drive.trajectoryBuilder(new Pose2d(-62, -26, Math.toRadians(0)))
                 .splineToConstantHeading(new Vector2d(-37, -35.5), 0)
                 .build();
@@ -207,9 +242,10 @@ public class NewAuton extends LinearOpMode {
         }
 
         if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
-            setShooterRPM(3300);
+            setShooterRPM(3200);
             liftUpRingKnocker();
             drive.followTrajectory(startToPowershotPos);
+            sleep(1000);
             Flick();
             drive.followTrajectory(powershotPosToCenterPowershot);
             Flick();
@@ -219,13 +255,22 @@ public class NewAuton extends LinearOpMode {
             lowerBackplate();
             followAsyncArm(powerShotToWobble, -0.45);
             releaseWobble();
-            sleep(500);
+            sleep(600);
             followAsyncArm(wobbleToWobble2, 0.55);
             liftWobble();
             sleep(500);
             drive.followTrajectory(dropWobble2);
             putWobbleLifterDown();
             sleep(500);
+            Pose2d poseEstimate = drive.getPoseEstimate();
+            Trajectory trajectory = drive.trajectoryBuilder(poseEstimate).lineToLinearHeading(new Pose2d(poseEstimate.getX(), poseEstimate.getY()+36, 0)).build();
+            drive.followTrajectory(trajectory);
+            drive.followTrajectory(pickUpRings);
+            Flick();
+            Flick();
+            Flick();
+            drive.followTrajectory(park);
+            /*
             drive.followTrajectory(getAwayFromWobble2);
             sleep(500);
             Flick();
@@ -233,6 +278,7 @@ public class NewAuton extends LinearOpMode {
             Flick();
             lowerBackplate();
             drive.followTrajectory(park);
+             */
         } else if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
 
         } else if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.FOUR) {
@@ -294,6 +340,10 @@ public class NewAuton extends LinearOpMode {
         ringKnocker.setPosition(0);
         wobbleLifter.setPosition(0.66);
         //wobbleLifter.setPosition(0.85);
+
+        shooter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(
+                190, 0, 10, 13 /* * 12 / batteryVoltageSensor.getVoltage() */
+        ));
     }
 
     public void followAsyncArm(Trajectory traj, double power) {
@@ -499,5 +549,10 @@ public class NewAuton extends LinearOpMode {
         {
             return avg1;
         }
+    }
+
+    private void setTelemetryData(String heading, String data) {
+        telemetry.addData(heading, data);
+        telemetry.update();
     }
 }

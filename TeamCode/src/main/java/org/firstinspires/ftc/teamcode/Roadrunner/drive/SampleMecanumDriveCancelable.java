@@ -515,4 +515,17 @@ public class SampleMecanumDriveCancelable extends MecanumDrive {
 
         return (double) imu.getAngularVelocity().zRotationRate;
     }
+
+    public void drawBoundingBox(double constraintLeft, double constraintRight, double constraintBack, double constraintFront){
+        TelemetryPacket packet = new TelemetryPacket();
+        Canvas fieldOverlay = packet.fieldOverlay();
+
+        fieldOverlay.setStroke("#0000FF");
+        fieldOverlay.setStrokeWidth(3);
+        fieldOverlay.strokeLine(constraintBack, constraintLeft, constraintFront, constraintLeft);
+        fieldOverlay.strokeLine(constraintFront, constraintLeft, constraintFront, constraintRight);
+        fieldOverlay.strokeLine(constraintFront, constraintRight, constraintBack, constraintRight);
+        fieldOverlay.strokeLine(constraintBack, constraintRight, constraintBack, constraintLeft);
+    }
+
 }

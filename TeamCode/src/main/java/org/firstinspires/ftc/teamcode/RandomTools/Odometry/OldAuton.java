@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.RandomTools.Odometry;
 
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.util.ReadWriteFile;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -23,8 +24,9 @@ import org.openftc.easyopencv.OpenCvWebcam;
 
 import java.io.File;
 
-@Autonomous(name="Auton")
-public class Auton extends RobotMovement {
+@Autonomous(name="Old Auton")
+@Disabled
+public class OldAuton extends RobotMovement {
 
     OpenCvWebcam webcam;
     SkystoneDeterminationPipeline pipeline;

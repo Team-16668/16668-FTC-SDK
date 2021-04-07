@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.RandomTools.shooterVeloTuning;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
@@ -6,6 +6,7 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 //import com.arcrobotics.ftclib.util.InterpLUT;
 
 import com.arcrobotics.ftclib.util.InterpLUT;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -23,6 +24,7 @@ import static java.lang.Math.pow;
 
 @Config
 @TeleOp(name="Closed Loop Tester")
+@Disabled
 public class ClosedLoopControlCalibration extends LinearOpMode {
     FtcDashboard dashboard;
 

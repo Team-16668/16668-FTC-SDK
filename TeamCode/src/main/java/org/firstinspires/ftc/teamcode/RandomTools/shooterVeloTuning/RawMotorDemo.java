@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.RandomTools.shooterVeloTuning;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -12,6 +13,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 @Config
 @TeleOp
+@Disabled
 public class RawMotorDemo extends LinearOpMode {
     public static double MOTOR_TICKS_PER_REV = 383.6;
     public static double MOTOR_MAX_RPM = 435;
