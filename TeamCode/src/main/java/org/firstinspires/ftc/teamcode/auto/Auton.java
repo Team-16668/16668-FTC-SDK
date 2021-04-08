@@ -92,16 +92,16 @@ public class Auton extends LinearOpMode {
                 .build();
 
         Trajectory powershotPosToRightPowershot = drive.trajectoryBuilder(powershotPosToCenterPowershot.end())
-                .lineToLinearHeading(new Pose2d(-10, -27, /*drive.headingFromPoints(72, -10,-10, -10)*/0))
+                .lineToLinearHeading(new Pose2d(-10, -28, /*drive.headingFromPoints(72, -10,-10, -10)*/0))
                 .build();
 
         //Zero Ring Trajectories
         setTelemetryData("Status", "Building zero rings trajectories");
-        Trajectory powerShotToWobble = drive.trajectoryBuilder(powershotPosToRightPowershot.end())
+        Trajectory powerShotToWobbleZeroRing = drive.trajectoryBuilder(powershotPosToRightPowershot.end())
                 .lineToLinearHeading(new Pose2d(15, -53, Math.toRadians(90)))
                 .build();
 
-        Trajectory wobbleToWobble2 = drive.trajectoryBuilder(powerShotToWobble.end())
+        Trajectory wobbleToWobble2ZeroRing = drive.trajectoryBuilder(powerShotToWobbleZeroRing.end())
                 .splineToLinearHeading(new Pose2d(15, -45, Math.toRadians(90)), 0)
                 .addDisplacementMarker(() -> { putWobbleLifterDown(); })
                 .splineToSplineHeading(new Pose2d(-22, -46, Math.toRadians(270)), 0)
@@ -114,27 +114,12 @@ public class Auton extends LinearOpMode {
                         new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
                 .build();
 
-        Trajectory dropWobble2 = drive.trajectoryBuilder(wobbleToWobble2.end())
+        Trajectory dropWobble2ZeroRing = drive.trajectoryBuilder(wobbleToWobble2ZeroRing.end())
                 .lineToLinearHeading(new Pose2d(7, -45, 0))
                 .build();
 
-        /*
-        Trajectory getAwayFromWobble2 = drive.trajectoryBuilder(dropWobble2.end())
-                .splineToConstantHeading(new Vector2d(3, -30), 0)
-                .addDisplacementMarker(() -> {
-                    putWobbleLifterUp();
-                    runIntakeForward();
-                    setShooterRPM(4400);
-                    grabWobble();})
-                .splineToSplineHeading(new Pose2d(56, -39, Math.toRadians(90)), 0)
-                .splineToConstantHeading(new Vector2d(56, 0), 0)
-                .splineToSplineHeading(new Pose2d(-4, -36, Math.toRadians(355)), 0)
-                .addDisplacementMarker(() -> { liftBackplate(); stopIntake();})
-                .build();
 
-         */
-
-        Trajectory pickUpRings = drive.trajectoryBuilder(new Pose2d(7, -9, 0))
+        Trajectory pickUpRingsZeroRings = drive.trajectoryBuilder(new Pose2d(7, -9, 0))
                 .addDisplacementMarker(() -> {
                     putWobbleLifterUp();
                     runIntakeForward();
@@ -149,10 +134,79 @@ public class Auton extends LinearOpMode {
                 })
                 .build();
 
-        Trajectory park = drive.trajectoryBuilder(pickUpRings.end())
+        Trajectory park = drive.trajectoryBuilder(pickUpRingsZeroRings.end())
                 .lineToConstantHeading(new Vector2d(9, -25))
                 .build();
 
+        //1 Ring Trajectories
+        setTelemetryData("Status", "Building one ring trajectories");
+
+        Trajectory shootInitialOneRing = drive.trajectoryBuilder(new Pose2d(-62, -26, Math.toRadians(0)))
+                .lineToConstantHeading(new Vector2d(-36, -36))
+                .build();
+
+        Trajectory pickUpOneRing = drive.trajectoryBuilder(shootInitialOneRing.end())
+                .addDisplacementMarker(() -> {
+                    runIntakeForward();
+                    setShooterRPM(3200);
+                    lowerBackplate();
+                })
+                .splineToConstantHeading(new Vector2d(-12, -36), 0)
+                .build();
+
+        Trajectory toPowerShotLeftOneRing = drive.trajectoryBuilder(pickUpOneRing.end())
+                .lineToLinearHeading(new Pose2d(-10, -11,0))
+                .addDisplacementMarker(() -> {
+                    liftBackplate();
+                    stopIntake();
+                })
+                .build();
+
+        Trajectory bounceBackOneRing = drive.trajectoryBuilder(powershotPosToRightPowershot.end())
+                .addDisplacementMarker(() -> {
+                    runIntakeForward();
+                    lowerBackplate();
+                })
+                .splineTo(new Vector2d(52, -10), 0)
+                .build();
+
+        Trajectory wobbleOneRing = drive.trajectoryBuilder(bounceBackOneRing.end())
+                .lineToLinearHeading(new Pose2d(48, -24, Math.toRadians(90)))
+                .addDisplacementMarker(() -> {
+                    setShooterRPM(3675);
+                })
+                .build();
+
+        Trajectory wobbleToWobble2OneRing = drive.trajectoryBuilder(wobbleOneRing.end())
+                .splineToSplineHeading(new Pose2d(48, -14, Math.toRadians(180)), 0)
+                .addDisplacementMarker(() -> { putWobbleLifterDown(); liftBackplate(); stopIntake(); grabWobble();})
+                .splineTo(new Vector2d(-15, -20), 0)
+                .splineToSplineHeading(new Pose2d(-15, -46), 0)
+                .splineToConstantHeading(new Vector2d(-40, -43),  0,  new MinVelocityConstraint(
+                                Arrays.asList(
+                                        new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
+                                        new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
+                                )
+                        ),
+                        new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
+                .build();
+
+        Trajectory shootBounceBackRingsOneRing = drive.trajectoryBuilder(wobbleToWobble2ZeroRing.end())
+                .lineToLinearHeading(new Pose2d(-4, -36, 0))
+                .build();
+
+        Trajectory dropWobble2OneRing = drive.trajectoryBuilder(shootBounceBackRingsOneRing.end())
+                .addDisplacementMarker(() -> {
+                    lowerBackplate();
+                    setShooterRPM(0);
+                })
+                .lineToLinearHeading(new Pose2d(31, -24, 0))
+                .build();
+
+        Trajectory parkOneRing = drive.trajectoryBuilder(new Pose2d(31, -9, 0))
+                .addDisplacementMarker(() -> {liftWobble();})
+                .lineToConstantHeading(new Vector2d(9, -25))
+                .build();
 
         //4 Ring Trajectories
         setTelemetryData("Status", "Building four ring trajectories");
@@ -175,9 +229,6 @@ public class Auton extends LinearOpMode {
         Trajectory traj5 = drive.trajectoryBuilder(traj4.end())
                 .splineToLinearHeading(new Pose2d(8, -38, Math.toRadians(0)), 0)
                 .build();
-        telemetry.addData("Status", "3");
-        telemetry.update();
-
 
         //Webcam initialization
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
@@ -253,34 +304,57 @@ public class Auton extends LinearOpMode {
             Flick();
             setShooterRPM(0);
             lowerBackplate();
-            followAsyncArm(powerShotToWobble, -0.45);
+            followAsyncArm(powerShotToWobbleZeroRing, -0.45);
             releaseWobble();
             sleep(600);
-            followAsyncArm(wobbleToWobble2, 0.55);
+            followAsyncArm(wobbleToWobble2ZeroRing, 0.55);
             liftWobble();
             sleep(500);
-            drive.followTrajectory(dropWobble2);
+            drive.followTrajectory(dropWobble2ZeroRing);
             putWobbleLifterDown();
             sleep(500);
             Pose2d poseEstimate = drive.getPoseEstimate();
             Trajectory trajectory = drive.trajectoryBuilder(poseEstimate).lineToLinearHeading(new Pose2d(poseEstimate.getX(), poseEstimate.getY()+36, 0)).build();
             drive.followTrajectory(trajectory);
-            drive.followTrajectory(pickUpRings);
+            drive.followTrajectory(pickUpRingsZeroRings);
             Flick();
             Flick();
             Flick();
             drive.followTrajectory(park);
-            /*
-            drive.followTrajectory(getAwayFromWobble2);
-            sleep(500);
-            Flick();
-            Flick();
-            Flick();
-            lowerBackplate();
-            drive.followTrajectory(park);
-             */
         } else if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
-
+            //This is just the powershots
+            setShooterRPM(3725);
+            liftUpRingKnocker();
+            drive.followTrajectory(shootInitialOneRing);
+            Flick();
+            drive.followTrajectory(pickUpOneRing);
+            drive.followTrajectory(toPowerShotLeftOneRing);
+            sleep(1000);
+            Flick();
+            drive.followTrajectory(powershotPosToCenterPowershot);
+            Flick();
+            drive.followTrajectory(powershotPosToRightPowershot);
+            Flick();
+            setShooterRPM(0);
+            //This is where we get into randomization specific movements (wobbles and ring pickups)
+            drive.followTrajectory(bounceBackOneRing);
+            followAsyncArm(wobbleOneRing, -0.45);
+            releaseWobble();
+            sleep(600);
+            followAsyncArm(wobbleToWobble2OneRing, 0.55);
+            liftWobble();
+            sleep(500);
+            drive.followTrajectory(shootBounceBackRingsOneRing);
+            Flick();
+            Flick();
+            Flick();
+            drive.followTrajectory(dropWobble2OneRing);
+            putWobbleLifterDown();
+            sleep(500);
+            Pose2d poseEstimate = drive.getPoseEstimate();
+            Trajectory trajectory = drive.trajectoryBuilder(poseEstimate).lineToLinearHeading(new Pose2d(poseEstimate.getX(), poseEstimate.getY()+12, 0)).build();
+            drive.followTrajectory(trajectory);
+            drive.followTrajectory(parkOneRing);
         } else if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.FOUR) {
             drive.followTrajectory(startToShootingPos);
             Thread.sleep(2000);
