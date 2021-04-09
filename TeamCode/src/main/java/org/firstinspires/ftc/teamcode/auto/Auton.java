@@ -210,24 +210,59 @@ public class Auton extends LinearOpMode {
 
         //4 Ring Trajectories
         setTelemetryData("Status", "Building four ring trajectories");
-        Trajectory startToShootingPos = drive.trajectoryBuilder(new Pose2d(-62, -26, Math.toRadians(0)))
-                .splineToConstantHeading(new Vector2d(-37, -35.5), 0)
+
+        Trajectory shootInitialFourRing = drive.trajectoryBuilder(new Pose2d(-62, -26, Math.toRadians(0)))
+                .addDisplacementMarker(() -> {
+                    setShooterRPM(3725);
+                })
+                .lineToConstantHeading(new Vector2d(-36, -36))
                 .build();
 
-        Trajectory traj2 = drive.trajectoryBuilder(startToShootingPos.end())
-                .lineToLinearHeading(new Pose2d(45, -40, Math.toRadians(135)))
+        Trajectory pickUpTwoRingsFourRing = drive.trajectoryBuilder(shootInitialFourRing.end())
+                .addDisplacementMarker(() -> {
+                    runIntakeForward();
+                    setShooterRPM(3675);
+                })
+                .lineToConstantHeading(new Vector2d(-23, -36),  new MinVelocityConstraint(
+                                Arrays.asList(
+                                        new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
+                                        new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
+                                )
+                        ),
+                        new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
                 .build();
 
-        Trajectory traj3 = drive.trajectoryBuilder(traj2.end())
-                .splineToLinearHeading(new Pose2d(-35, -42, Math.toRadians(270)), 0)
+        Trajectory pickUpNextRingsFourRings = drive.trajectoryBuilder(pickUpTwoRingsFourRing.end())
+                .addDisplacementMarker(() -> {lowerBackplate();})
+                .splineToConstantHeading(new Vector2d(3, -36), 0, new MinVelocityConstraint(
+                                Arrays.asList(
+                                        new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
+                                        new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
+                                )
+                        ),
+                        new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
+                .splineToConstantHeading(new Vector2d(-4. -36), 0)
                 .build();
 
-        Trajectory traj4 = drive.trajectoryBuilder(traj3.end())
-                .lineToLinearHeading(new Pose2d(57, -45, Math.toRadians(0)))
+        Trajectory deliverWobbleFourRing = drive.trajectoryBuilder(pickUpNextRingsFourRings.end())
+                .lineToLinearHeading(new Pose2d(48, -48, Math.toRadians(135)))
                 .build();
 
-        Trajectory traj5 = drive.trajectoryBuilder(traj4.end())
-                .splineToLinearHeading(new Pose2d(8, -38, Math.toRadians(0)), 0)
+        Trajectory wobbleToWobble2FourRing = drive.trajectoryBuilder(deliverWobbleFourRing.end())
+                .splineToConstantHeading(new Vector2d(36, -36), 0)
+                .addDisplacementMarker(() -> { putWobbleLifterDown(); grabWobble();})
+                .splineToSplineHeading(new Pose2d(-22, -46, Math.toRadians(270)), 0)
+                .splineToConstantHeading(new Vector2d(-40, -43),  0,  new MinVelocityConstraint(
+                                Arrays.asList(
+                                        new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
+                                        new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
+                                )
+                        ),
+                        new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
+                .build();
+
+        Trajectory deliverWobble2FourRing = drive.trajectoryBuilder(wobbleToWobble2FourRing.end())
+                .lineToLinearHeading(new Pose2d(60, -48, 0))
                 .build();
 
         //Webcam initialization
@@ -356,16 +391,39 @@ public class Auton extends LinearOpMode {
             drive.followTrajectory(trajectory);
             drive.followTrajectory(parkOneRing);
         } else if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.FOUR) {
-            drive.followTrajectory(startToShootingPos);
-            Thread.sleep(2000);
-            drive.followTrajectory(traj2);
-            Thread.sleep(2000);
-            drive.followTrajectory(traj3);
-            Thread.sleep(2000);
-            drive.followTrajectory(traj4);
-            Thread.sleep(2000);
-            drive.followTrajectory(traj5);
-            Thread.sleep(2000);
+            drive.followTrajectory(shootInitialFourRing);
+            Flick();
+            Flick();
+            Flick();
+            drive.followTrajectory(pickUpTwoRingsFourRing);
+            sleep(1000);
+            liftBackplate();
+            sleep(500);
+            Flick();
+            drive.followTrajectory(pickUpNextRingsFourRings);
+            sleep(1000);
+            liftBackplate();
+            sleep(500);
+            Flick();
+            Flick();
+            Flick();
+            liftUpRingKnocker();
+            followAsyncArm(deliverWobbleFourRing, -0.45);
+            releaseWobble();
+            sleep(500);
+            followAsyncArm(wobbleToWobble2FourRing, 0.55);
+            liftWobble();
+            sleep(500);
+            drive.followTrajectory(deliverWobble2FourRing);
+            putWobbleLifterDown();
+            Pose2d poseEstimate = drive.getPoseEstimate();
+            Trajectory parkTrajectory = drive.trajectoryBuilder(poseEstimate)
+                    .splineToConstantHeading(new Vector2d(poseEstimate.getX(), poseEstimate.getY() + 12), 0)
+                    .addDisplacementMarker(() -> {putWobbleLifterUp();})
+                    .splineToConstantHeading(new Vector2d(10, -24), 0)
+                    .build();
+
+            drive.followTrajectory(parkTrajectory);
         }
 
         PoseStorage.currentPose = drive.getPoseEstimate();
@@ -439,11 +497,11 @@ public class Auton extends LinearOpMode {
     void Flick() {
         flickerStartTime = System.nanoTime();
         flicker.setPosition(0);
-        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 0.2 && opModeIsActive() && !isStopRequested()) {
+        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 0.25 && opModeIsActive() && !isStopRequested()) {
             sleep(10);
         }
         flicker.setPosition(0.23);
-        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 0.4 && opModeIsActive() && !isStopRequested()) {
+        while((System.nanoTime() - flickerStartTime) / TimeUnit.SECONDS.toNanos(1) <= 0.5 && opModeIsActive() && !isStopRequested()) {
             sleep(10);
         }
     }
