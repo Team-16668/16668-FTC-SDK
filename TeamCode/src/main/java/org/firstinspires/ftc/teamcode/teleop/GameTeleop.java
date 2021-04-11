@@ -55,6 +55,11 @@ public class GameTeleop extends LinearOpMode {
     WobbleState wobbleState = WobbleState.Initial;
     AutomaticState automaticState = AutomaticState.GoToLine;
 
+    double wobbleLifterUpPos = 0.665;
+
+    public static double leftFactor = 10;
+    public static double rightFactor = 0;
+
     //Global Game State Variable
     FtcDashboard dashboard = FtcDashboard.getInstance();
     double goalXPos = 72;
@@ -75,7 +80,7 @@ public class GameTeleop extends LinearOpMode {
     RoadrunnerPoint currentPowerShotTargetPoint = new RoadrunnerPoint(powerShotShootingPointLeft.x, powerShotShootingPointLeft.y);
 
     public static double constraintRight = -48;
-    public static double constraintLeft = 12;
+    public static double constraintLeft = -24;
     public static double constraintFront = -10;
     public static double constraintBack = -24;
 
@@ -108,7 +113,7 @@ public class GameTeleop extends LinearOpMode {
     public static double totalFlickTime = 0.5;
 
     //Logic for Shooter
-    public static double normalTargetRPM = 3675;
+    public static double normalTargetRPM = 3650;
     public static double powerShotTargetRPM = 3300;
     double shooterStartTime,
             shooterTargetRPM = normalTargetRPM;
@@ -701,9 +706,9 @@ public class GameTeleop extends LinearOpMode {
             if(!drive.isBusy() && shouldFollow) {
                 if(pipeline.isRedVisible()) {
                     if(yaw >= 0) {
-                        drive.turnAsync(-Math.toRadians(yaw-5));
+                        drive.turnAsync(-Math.toRadians(yaw+leftFactor));
                     }else if(yaw <=0) {
-                        drive.turnAsync(-Math.toRadians(yaw+5));
+                        drive.turnAsync(-Math.toRadians(yaw-rightFactor));
                     }
                     shouldFollow = false;
                 }
@@ -772,9 +777,9 @@ public class GameTeleop extends LinearOpMode {
             double yaw = pipeline.calculateYaw(UGAngleHighGoalPipeline.Target.RED);
             if(pipeline.isRedVisible()) {
                 if(yaw >= 0) {
-                    drive.turnAsync(-Math.toRadians(yaw+5));
+                    drive.turnAsync(-Math.toRadians(yaw+leftFactor));
                 }else if(yaw <= 0) {
-                    drive.turnAsync(-Math.toRadians(yaw));
+                    drive.turnAsync(-Math.toRadians(yaw-rightFactor));
                 }
                 shouldFollow = false;
             }
@@ -795,7 +800,8 @@ public class GameTeleop extends LinearOpMode {
 
         automaticState = AutomaticState.GoToLine;
         //This runs if we're already behing the shooing line
-        if(poseEstimate.getX() <= constraintFront && poseEstimate.getX() >= constraintBack && poseEstimate.getY() <= constraintLeft && poseEstimate.getY() >= constraintRight) {
+        //if(poseEstimate.getX() <= constraintFront && poseEstimate.getX() >= constraintBack && poseEstimate.getY() <= constraintLeft && poseEstimate.getY() >= constraintRight) {
+        if(false) {
             if((poseEstimate.getHeading() <= Math.toRadians(45) || poseEstimate.getHeading() >= Math.toRadians(315)) && pipeline.isRedVisible()) {
                 automaticState = AutomaticState.AngleVision;
             } else {
@@ -811,7 +817,8 @@ public class GameTeleop extends LinearOpMode {
                 yPos = constraintLeft;
             }
             Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
-                    .lineToLinearHeading(new Pose2d(constraintFront, yPos, drive.headingFromPoints(currentXPos, currentYPos, constraintFront, yPos)))
+                    //.lineToLinearHeading(new Pose2d(constraintFront, yPos, drive.headingFromPoints(goalXPos, goalYPos, constraintFront, yPos)))
+                    .lineToLinearHeading(new Pose2d(-4, -24, drive.headingFromPoints(goalXPos, goalYPos, -4, -24)))
                     .build();
             drive.followTrajectoryAsync(trajectory);
         }
@@ -860,7 +867,7 @@ public class GameTeleop extends LinearOpMode {
         backPlate.setPosition(1);
         flicker.setPosition(0.23);
 
-        wobbleLifter.setPosition(0.66);
+        wobbleLifter.setPosition(wobbleLifterUpPos);
         ringKnocker.setPosition(0);
     }
 

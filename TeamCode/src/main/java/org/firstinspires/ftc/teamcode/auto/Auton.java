@@ -63,6 +63,8 @@ public class Auton extends LinearOpMode {
 
     double flickerStartTime;
 
+    double wobbleLifterUpPos = 0.665;
+
     @Override
     public void runOpMode() throws InterruptedException {
         setTelemetryData("Status", "Initializing");
@@ -127,7 +129,7 @@ public class Auton extends LinearOpMode {
                     grabWobble();
                 })
                 .splineToSplineHeading(new Pose2d(52, -10, 0), 0)
-                .addDisplacementMarker(() -> {setShooterRPM(3675);})
+                .addDisplacementMarker(() -> {setShooterRPM(3650);})
                 .splineToSplineHeading(new Pose2d(-4, -36, 0), 0)
                 .addDisplacementMarker(() -> {
                     liftBackplate(); stopIntake();
@@ -136,7 +138,7 @@ public class Auton extends LinearOpMode {
 
         Trajectory park = drive.trajectoryBuilder(pickUpRingsZeroRings.end())
                 .addDisplacementMarker(() -> { putWobbleLifterUp(); })
-                .lineToConstantHeading(new Vector2d(9, -12))
+                .lineToConstantHeading(new Vector2d(9, -36))
                 .build();
 
         //1 Ring Trajectories
@@ -174,12 +176,12 @@ public class Auton extends LinearOpMode {
                 .build();
 
         Trajectory goToWobbleTwoOneRing = drive.trajectoryBuilder(getAwayFromWobbleOneRing.end())
-                .lineToSplineHeading(new Pose2d(-20, -43, Math.toRadians(270)))
+                .lineToSplineHeading(new Pose2d(-20, -41, Math.toRadians(270)))
                 .addDisplacementMarker(() -> {putWobbleLifterDown();})
                 .build();
 
         Trajectory grabWobbleTwoOneRing = drive.trajectoryBuilder(goToWobbleTwoOneRing.end())
-                .lineToConstantHeading(new Vector2d(-40, -43), new MinVelocityConstraint(
+                .lineToConstantHeading(new Vector2d(-40, -41), new MinVelocityConstraint(
                                 Arrays.asList(
                                         new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
                                         new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
@@ -228,7 +230,7 @@ public class Auton extends LinearOpMode {
                 .build();
 
         Trajectory pickUpNextRingsFourRings = drive.trajectoryBuilder(pickUpTwoRingsFourRing.end())
-                .addDisplacementMarker(() -> {lowerBackplate();})
+                .addDisplacementMarker(() -> {lowerBackplate(); runIntakeForward();})
                 .splineToConstantHeading(new Vector2d(-4, -37), 0, new MinVelocityConstraint(
                                 Arrays.asList(
                                         new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
@@ -240,7 +242,7 @@ public class Auton extends LinearOpMode {
                 .build();
 
         Trajectory deliverWobbleFourRing = drive.trajectoryBuilder(pickUpNextRingsFourRings.end())
-                .lineToLinearHeading(new Pose2d(50, -48, Math.toRadians(135)))
+                .lineToLinearHeading(new Pose2d(51, -49, Math.toRadians(135)))
                 .build();
 
         Trajectory getAwayFromWobble2FourRing = drive.trajectoryBuilder(deliverWobbleFourRing.end())
@@ -250,20 +252,20 @@ public class Auton extends LinearOpMode {
 
         Trajectory wobbleToWobble2FourRing = drive.trajectoryBuilder(getAwayFromWobble2FourRing.end())
                 .addDisplacementMarker(() -> {putWobbleLifterDown();})
-                .lineToSplineHeading(new Pose2d(-22, -43, Math.toRadians(270)))
+                .lineToSplineHeading(new Pose2d(-22, -41, Math.toRadians(270)))
                 .build();
 
         Trajectory wobblePart2FourRing = drive.trajectoryBuilder(wobbleToWobble2FourRing.end())
-                .lineToConstantHeading(new Vector2d(-40, -43),  new MinVelocityConstraint(
+                .lineToConstantHeading(new Vector2d(-40, -41),  new MinVelocityConstraint(
                                 Arrays.asList(
                                         new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
-                                        new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
+                                        new MecanumVelocityConstraint(12, DriveConstants.TRACK_WIDTH)
                                 )
                         ),
                         new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
                 .build();
 
-        Trajectory deliverWobble2FourRing = drive.trajectoryBuilder(wobbleToWobble2FourRing.end())
+            Trajectory deliverWobble2FourRing = drive.trajectoryBuilder(new Pose2d(wobblePart2FourRing.end().getX(), wobblePart2FourRing.end().getY()-10, wobblePart2FourRing.end().getHeading()))
                 .lineToLinearHeading(new Pose2d(51, -50, 0))
                 .build();
 
@@ -393,9 +395,11 @@ public class Auton extends LinearOpMode {
             Flick();
             Flick();
             Flick();
+            Flick();
             drive.followTrajectory(pickUpTwoRingsFourRing);
-            sleep(1000);
+            sleep(750);
             liftBackplate();
+            stopIntake();
             sleep(500);
             Flick();
             Flick();
@@ -476,7 +480,7 @@ public class Auton extends LinearOpMode {
         flicker.setPosition(0.23);
 
         ringKnocker.setPosition(0);
-        wobbleLifter.setPosition(0.66);
+        wobbleLifter.setPosition(wobbleLifterUpPos);
         //wobbleLifter.setPosition(0.85);
 
         shooter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(
@@ -566,7 +570,7 @@ public class Auton extends LinearOpMode {
     }
 
     public void putWobbleLifterUp() {
-        wobbleLifter.setPosition(0.66);
+        wobbleLifter.setPosition(wobbleLifterUpPos);
     }
 
     public void putDownRingKnocker() {
