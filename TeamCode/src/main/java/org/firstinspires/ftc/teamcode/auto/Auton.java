@@ -49,7 +49,7 @@ public class Auton extends LinearOpMode {
     //Ultimate Goal Specific Hardware
     DcMotor intake, wobbleArm;
     DcMotorEx shooter;
-    Servo wobbleClaw, wobbleClaw2, backPlate, flicker, ringKnocker, wobbleLifter;
+    Servo wobbleClaw, wobbleClaw2, backPlate, flicker, ringKnocker, wobbleLifter, herderServo;
     CRServo intakeServo;
     TouchSensor wobbleTouch1, wobbleTouch2;
     RevBlinkinLedDriver lights, lights2;
@@ -176,12 +176,12 @@ public class Auton extends LinearOpMode {
                 .build();
 
         Trajectory goToWobbleTwoOneRing = drive.trajectoryBuilder(getAwayFromWobbleOneRing.end())
-                .lineToSplineHeading(new Pose2d(-20, -41, Math.toRadians(270)))
+                .lineToSplineHeading(new Pose2d(-20, -43, Math.toRadians(270)))
                 .addDisplacementMarker(() -> {putWobbleLifterDown();})
                 .build();
 
         Trajectory grabWobbleTwoOneRing = drive.trajectoryBuilder(goToWobbleTwoOneRing.end())
-                .lineToConstantHeading(new Vector2d(-40, -41), new MinVelocityConstraint(
+                .lineToConstantHeading(new Vector2d(-40, -43), new MinVelocityConstraint(
                                 Arrays.asList(
                                         new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
                                         new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
@@ -459,6 +459,9 @@ public class Auton extends LinearOpMode {
         flicker = hardwareMap.servo.get("flicker");
         intakeServo = hardwareMap.get(CRServo.class, "intake_servo");
 
+        //For the ring herder
+        herderServo = hardwareMap.servo.get("herder");
+
         lights = hardwareMap.get(RevBlinkinLedDriver.class, "lights");
         lights2 = hardwareMap.get(RevBlinkinLedDriver.class, "lights2");
     }
@@ -478,6 +481,7 @@ public class Auton extends LinearOpMode {
         wobbleClaw2.setPosition(1);
         backPlate.setPosition(0);
         flicker.setPosition(0.23);
+        herderServo.setPosition(0);
 
         ringKnocker.setPosition(0);
         wobbleLifter.setPosition(wobbleLifterUpPos);

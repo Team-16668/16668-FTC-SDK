@@ -40,7 +40,7 @@ public class GameTeleop extends LinearOpMode {
     RevBlinkinLedDriver lights, lights2;
     DcMotor intake, wobbleArm;
     DcMotorEx shooter;
-    Servo wobbleClaw, wobbleClaw2, backPlate, flicker, wobbleLifter, ringKnocker;
+    Servo wobbleClaw, wobbleClaw2, backPlate, flicker, wobbleLifter, ringKnocker, herderServo;
     CRServo intakeServo;
     TouchSensor wobbleTouch1, wobbleTouch2;
     private VoltageSensor batteryVoltageSensor;
@@ -53,6 +53,7 @@ public class GameTeleop extends LinearOpMode {
     ShooterState shooterState = ShooterState.Normal;
     ClawState clawState = ClawState.Closed;
     WobbleState wobbleState = WobbleState.Initial;
+    HerderState herderState = HerderState.Up;
     AutomaticState automaticState = AutomaticState.GoToLine;
 
     double wobbleLifterUpPos = 0.665;
@@ -138,6 +139,10 @@ public class GameTeleop extends LinearOpMode {
     boolean currentWobbleMachineState, prevWobbleMachineState;
     int step = 1;
     double wobbleTimerStartTime = 0, timeSinceWobbleStart = 0;
+
+    //Logic for the ring herder
+    boolean currentDPad = false;
+    boolean prevDPad = false;
 
     int turnStep = 1;
 
@@ -267,9 +272,26 @@ public class GameTeleop extends LinearOpMode {
                 IntakeTimer();
             }
 
+            HerderSubroutine();
+
             Telemetry();
         }
         webcam.stopStreaming();
+    }
+
+    private void HerderSubroutine() {
+        currentDPad = gamepad1.dpad_up || gamepad1.dpad_down || gamepad1.dpad_left || gamepad1.dpad_right;
+
+        if(currentDPad && currentDPad != prevDPad) {
+            if(herderState == HerderState.Down) {
+                herderState = HerderState.Up;
+                herderServo.setPosition(0);
+            }else if(herderState == HerderState.Up) {
+                herderState = HerderState.Down;
+                herderServo.setPosition(1);
+            }
+        }
+        prevDPad = currentDPad;
     }
 
     private void Shooting() {
@@ -786,6 +808,8 @@ public class GameTeleop extends LinearOpMode {
             automaticState = AutomaticState.Finish;
         } else if(!drive.isBusy() && automaticState == AutomaticState.Finish) {
             driveState = DriveState.DRIVER_CONTROL;
+            lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.SKY_BLUE);
+            lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.SKY_BLUE);
         }
     }
 
@@ -845,6 +869,9 @@ public class GameTeleop extends LinearOpMode {
         backPlate = hardwareMap.servo.get("backplate");
         flicker = hardwareMap.servo.get("flicker");
 
+        //For the ring herder
+        herderServo = hardwareMap.servo.get("herder");
+
         lights = hardwareMap.get(RevBlinkinLedDriver.class, "lights");
         lights2 = hardwareMap.get(RevBlinkinLedDriver.class, "lights2");
 
@@ -869,6 +896,8 @@ public class GameTeleop extends LinearOpMode {
 
         wobbleLifter.setPosition(wobbleLifterUpPos);
         ringKnocker.setPosition(0);
+
+        herderServo.setPosition(0);
     }
 
     private enum GameState {Shooting, Intake}
@@ -884,6 +913,8 @@ public class GameTeleop extends LinearOpMode {
     private enum Powershot {Left, Center, Right}
 
     private enum WobbleState {Initial, DownOpen, VerticalClosed, DropWobble, RetractedClosed}
+
+    private enum HerderState { Down, Up}
 
     private enum AutomaticState {GoToLine, AngleOdo, AngleVision, Finish}
 
