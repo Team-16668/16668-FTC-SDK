@@ -129,7 +129,7 @@ public class Auton extends LinearOpMode {
                 })
                 .splineToSplineHeading(new Pose2d(52, -10, 0), 0)
                 .addDisplacementMarker(() -> {setShooterRPM(3650);})
-                .splineToSplineHeading(new Pose2d(-4, -36, Math.toRadians(3)), 0)
+                .splineToSplineHeading(new Pose2d(-4, -36, Math.toRadians(357)), 0)
                 .addDisplacementMarker(() -> {
                     liftBackplate(); stopIntake();
                 })
