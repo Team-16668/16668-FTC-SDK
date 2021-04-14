@@ -265,7 +265,8 @@ public class Auton extends LinearOpMode {
                 .build();
 
             Trajectory deliverWobble2FourRing = drive.trajectoryBuilder(new Pose2d(wobblePart2FourRing.end().getX(), wobblePart2FourRing.end().getY()+10, wobblePart2FourRing.end().getHeading()))
-                .lineToLinearHeading(new Pose2d(51, -52, 0))
+                .splineToSplineHeading(new Pose2d(40, -45, 0), 0)
+                .splineToSplineHeading(new Pose2d(51, -52, 0), 0)
                 .build();
 
         //Webcam initialization
@@ -426,10 +427,10 @@ public class Auton extends LinearOpMode {
             Trajectory parkTrajectory = drive.trajectoryBuilder(poseEstimate)
                     .splineToConstantHeading(new Vector2d(poseEstimate.getX(), poseEstimate.getY() + 12), 0)
                     .addDisplacementMarker(() -> {putWobbleLifterUp();})
-                    .splineToConstantHeading(new Vector2d(18, -24), 0)
+                    .splineToConstantHeading(new Vector2d(24, -24), 0)
                     .build();
 
-            drive.followTrajectory(parkTrajectory);
+            followAsyncArm(parkTrajectory, -0.45);
         }
 
         PoseStorage.currentPose = drive.getPoseEstimate();

@@ -421,6 +421,7 @@ public class GameTeleop extends LinearOpMode {
             flicker.setPosition(0);
             flickerStartTime = System.nanoTime();
             firstReturn = true;
+            tryHerderDown = true;
         }
     }
 
