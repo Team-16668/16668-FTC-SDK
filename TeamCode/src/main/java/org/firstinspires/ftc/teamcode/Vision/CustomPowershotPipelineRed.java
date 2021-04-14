@@ -118,7 +118,6 @@ public class CustomPowershotPipelineRed extends OpenCvPipeline {
 
         // Red threshold
         Imgproc.threshold(redChannel, redThreshold, minThreshold, maxThreshold, Imgproc.THRESH_BINARY);
-        saveMatToDisk(redThreshold, "threshold");
 
         redContours.clear();
 

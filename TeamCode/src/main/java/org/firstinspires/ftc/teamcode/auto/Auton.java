@@ -7,7 +7,6 @@ import com.acmerobotics.roadrunner.trajectory.constraints.AngularVelocityConstra
 import com.acmerobotics.roadrunner.trajectory.constraints.MecanumVelocityConstraint;
 import com.acmerobotics.roadrunner.trajectory.constraints.MinVelocityConstraint;
 import com.acmerobotics.roadrunner.trajectory.constraints.ProfileAccelerationConstraint;
-import com.acmerobotics.roadrunner.util.Angle;
 import com.qualcomm.hardware.rev.RevBlinkinLedDriver;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -49,7 +48,7 @@ public class Auton extends LinearOpMode {
     //Ultimate Goal Specific Hardware
     DcMotor intake, wobbleArm;
     DcMotorEx shooter;
-    Servo wobbleClaw, wobbleClaw2, backPlate, flicker, ringKnocker, wobbleLifter, herderServo;
+    Servo wobbleClaw, wobbleClaw2, backPlate, flicker, ringKnocker, wobbleLifter, herderServoLeft, herderServoRight;
     CRServo intakeServo;
     TouchSensor wobbleTouch1, wobbleTouch2;
     RevBlinkinLedDriver lights, lights2;
@@ -130,7 +129,7 @@ public class Auton extends LinearOpMode {
                 })
                 .splineToSplineHeading(new Pose2d(52, -10, 0), 0)
                 .addDisplacementMarker(() -> {setShooterRPM(3650);})
-                .splineToSplineHeading(new Pose2d(-4, -36, 0), 0)
+                .splineToSplineHeading(new Pose2d(-4, -36, Math.toRadians(3)), 0)
                 .addDisplacementMarker(() -> {
                     liftBackplate(); stopIntake();
                 })
@@ -209,7 +208,7 @@ public class Auton extends LinearOpMode {
 
         Trajectory shootInitialFourRing = drive.trajectoryBuilder(new Pose2d(-62, -26, Math.toRadians(0)))
                 .addDisplacementMarker(() -> {
-                    setShooterRPM(3690);
+                    setShooterRPM(3720);
                 })
                 .lineToConstantHeading(new Vector2d(-39, -37))
                 .build();
@@ -252,11 +251,11 @@ public class Auton extends LinearOpMode {
 
         Trajectory wobbleToWobble2FourRing = drive.trajectoryBuilder(getAwayFromWobble2FourRing.end())
                 .addDisplacementMarker(() -> {putWobbleLifterDown();})
-                .lineToSplineHeading(new Pose2d(-22, -41, Math.toRadians(270)))
+                .lineToSplineHeading(new Pose2d(-22, -47, Math.toRadians(270)))
                 .build();
 
         Trajectory wobblePart2FourRing = drive.trajectoryBuilder(wobbleToWobble2FourRing.end())
-                .lineToConstantHeading(new Vector2d(-40, -41),  new MinVelocityConstraint(
+                .lineToConstantHeading(new Vector2d(-40, -47),  new MinVelocityConstraint(
                                 Arrays.asList(
                                         new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
                                         new MecanumVelocityConstraint(12, DriveConstants.TRACK_WIDTH)
@@ -265,8 +264,8 @@ public class Auton extends LinearOpMode {
                         new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
                 .build();
 
-            Trajectory deliverWobble2FourRing = drive.trajectoryBuilder(new Pose2d(wobblePart2FourRing.end().getX(), wobblePart2FourRing.end().getY()-10, wobblePart2FourRing.end().getHeading()))
-                .lineToLinearHeading(new Pose2d(51, -50, 0))
+            Trajectory deliverWobble2FourRing = drive.trajectoryBuilder(new Pose2d(wobblePart2FourRing.end().getX(), wobblePart2FourRing.end().getY()+10, wobblePart2FourRing.end().getHeading()))
+                .lineToLinearHeading(new Pose2d(51, -52, 0))
                 .build();
 
         //Webcam initialization
@@ -358,7 +357,6 @@ public class Auton extends LinearOpMode {
             drive.followTrajectory(pickUpRingsZeroRings);
             Flick();
             Flick();
-            Flick();
             drive.followTrajectory(park);
         } else if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
             setShooterRPM(3700);
@@ -407,6 +405,7 @@ public class Auton extends LinearOpMode {
             sleep(1000);
             liftBackplate();
             liftUpRingKnocker();
+            stopIntake();
             sleep(500);
             Flick();
             Flick();
@@ -460,7 +459,8 @@ public class Auton extends LinearOpMode {
         intakeServo = hardwareMap.get(CRServo.class, "intake_servo");
 
         //For the ring herder
-        herderServo = hardwareMap.servo.get("herder");
+        herderServoLeft = hardwareMap.servo.get("herder_left");
+        herderServoRight = hardwareMap.servo.get("herder_right");
 
         lights = hardwareMap.get(RevBlinkinLedDriver.class, "lights");
         lights2 = hardwareMap.get(RevBlinkinLedDriver.class, "lights2");
@@ -481,7 +481,7 @@ public class Auton extends LinearOpMode {
         wobbleClaw2.setPosition(1);
         backPlate.setPosition(0);
         flicker.setPosition(0.23);
-        herderServo.setPosition(0);
+        herderServoLeft.setPosition(0);
 
         ringKnocker.setPosition(0);
         wobbleLifter.setPosition(wobbleLifterUpPos);
