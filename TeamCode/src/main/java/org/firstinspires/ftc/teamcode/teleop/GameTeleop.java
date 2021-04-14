@@ -24,6 +24,7 @@ import org.firstinspires.ftc.teamcode.Roadrunner.PoseStorage;
 import org.firstinspires.ftc.teamcode.Roadrunner.drive.SampleMecanumDriveCancelable;
 import org.firstinspires.ftc.teamcode.Roadrunner.util.RoadrunnerPoint;
 import org.firstinspires.ftc.teamcode.Roadrunner.util.TelemetryPacket;
+import org.firstinspires.ftc.teamcode.Vision.CustomPowershotPipelineRed;
 import org.firstinspires.ftc.teamcode.Vision.UGAngleHighGoalPipeline;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
@@ -40,20 +41,35 @@ public class GameTeleop extends LinearOpMode {
     RevBlinkinLedDriver lights, lights2;
     DcMotor intake, wobbleArm;
     DcMotorEx shooter;
-    Servo wobbleClaw, wobbleClaw2, backPlate, flicker, wobbleLifter, ringKnocker;
+    Servo wobbleClaw, wobbleClaw2, backPlate, flicker, wobbleLifter, ringKnocker, herderServoLeft, herderServoRight;
     CRServo intakeServo;
     TouchSensor wobbleTouch1, wobbleTouch2;
     private VoltageSensor batteryVoltageSensor;
 
+    boolean allowPowershotMachine = false;
+    int powerShotStep = 1;
+
     //All the State Machines
     GameState gameState = GameState.Intake;
     DriveState driveState = DriveState.DRIVER_CONTROL;
-    Powershot currentPowerShot = Powershot.Left;
+    Powershot currentPowerShot = Powershot.Right;
     IntakeDirection intakeDirection = IntakeDirection.In;
     ShooterState shooterState = ShooterState.Normal;
     ClawState clawState = ClawState.Closed;
     WobbleState wobbleState = WobbleState.Initial;
+    HerderState herderState = HerderState.Up;
     AutomaticState automaticState = AutomaticState.GoToLine;
+
+    boolean tryHerderDown = true;
+
+    double wobbleLifterUpPos = 0.665;
+
+    public static double leftFactor = 9;
+    public static double rightFactor = 0;
+
+    public static double leftShotOffset  = 0;
+    public static double centerShotOffset = 0;
+    public static double rightShotOffset = 0;
 
     //Global Game State Variable
     FtcDashboard dashboard = FtcDashboard.getInstance();
@@ -75,7 +91,7 @@ public class GameTeleop extends LinearOpMode {
     RoadrunnerPoint currentPowerShotTargetPoint = new RoadrunnerPoint(powerShotShootingPointLeft.x, powerShotShootingPointLeft.y);
 
     public static double constraintRight = -48;
-    public static double constraintLeft = 12;
+    public static double constraintLeft = -24;
     public static double constraintFront = -10;
     public static double constraintBack = -24;
 
@@ -108,7 +124,7 @@ public class GameTeleop extends LinearOpMode {
     public static double totalFlickTime = 0.5;
 
     //Logic for Shooter
-    public static double normalTargetRPM = 3675;
+    public static double normalTargetRPM = 3650;
     public static double powerShotTargetRPM = 3300;
     double shooterStartTime,
             shooterTargetRPM = normalTargetRPM;
@@ -134,13 +150,18 @@ public class GameTeleop extends LinearOpMode {
     int step = 1;
     double wobbleTimerStartTime = 0, timeSinceWobbleStart = 0;
 
+    //Logic for the ring herder
+    boolean currentDPad = false;
+    boolean prevDPad = false;
+
     int turnStep = 1;
 
     SampleMecanumDriveCancelable drive;
 
     //Vision stuff
     OpenCvWebcam webcam;
-    UGAngleHighGoalPipeline pipeline;
+    UGAngleHighGoalPipeline highGoalPipeline;
+    CustomPowershotPipelineRed powershotPipeline;
 
     boolean currentYState, prevYState;
     boolean shouldFollow = true;
@@ -149,9 +170,10 @@ public class GameTeleop extends LinearOpMode {
 
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         webcam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "goal_webcam"), cameraMonitorViewId);
-        pipeline = new UGAngleHighGoalPipeline(60, 0, 0);
+        highGoalPipeline = new UGAngleHighGoalPipeline(60, 0, 0);
+        powershotPipeline = new CustomPowershotPipelineRed(60, 0, 0);
 
-        webcam.setPipeline(pipeline);
+        webcam.setPipeline(highGoalPipeline);
 
         webcam.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener()
         {
@@ -262,9 +284,44 @@ public class GameTeleop extends LinearOpMode {
                 IntakeTimer();
             }
 
+            HerderSubroutine();
+
             Telemetry();
         }
         webcam.stopStreaming();
+    }
+
+    private void HerderSubroutine() {
+        currentDPad = gamepad1.dpad_up || gamepad1.dpad_down;
+
+        if(currentDPad && currentDPad != prevDPad) {
+            if(herderState == HerderState.Up) {
+                putHerdersDown();
+            } else {
+                putHerdersUp();
+            }
+        }
+        prevDPad = currentDPad;
+
+        Pose2d currentPose = drive.getPoseEstimate();
+        if(currentPose.getX() > 36 || currentPose.getX() < -36 || currentPose.getY() > -12 || currentPose.getY() < -36) {
+            putHerdersUp();
+        } else if (tryHerderDown) {
+            putHerdersDown();
+            tryHerderDown = false;
+        }
+    }
+
+    private void putHerdersDown() {
+        herderServoLeft.setPosition(1);
+        herderServoRight.setPosition(0);
+        herderState = HerderState.Down;
+    }
+
+    private void putHerdersUp() {
+        herderServoLeft.setPosition(0);
+        herderServoRight.setPosition(1);
+        herderState = HerderState.Up;
     }
 
     private void Shooting() {
@@ -290,9 +347,9 @@ public class GameTeleop extends LinearOpMode {
         new TelemetryPacket("shooter mode", shooterState.name()),
         new TelemetryPacket("Drive mode", driveState.name()),
         new TelemetryPacket("Powershot", currentPowerShot.name()),
-        new TelemetryPacket("Goal visisble", Boolean.toString(pipeline.isRedVisible())),
-        new TelemetryPacket("Goal pitch", Double.toString(pipeline.calculatePitch(UGAngleHighGoalPipeline.Target.RED))),
-        new TelemetryPacket("Goal yaw", Double.toString(pipeline.calculateYaw(UGAngleHighGoalPipeline.Target.RED))),
+        new TelemetryPacket("Goal visisble", Boolean.toString(highGoalPipeline.isRedVisible())),
+        new TelemetryPacket("Goal pitch", Double.toString(highGoalPipeline.calculatePitch(UGAngleHighGoalPipeline.Target.RED))),
+        new TelemetryPacket("Goal yaw", Double.toString(highGoalPipeline.calculateYaw(UGAngleHighGoalPipeline.Target.RED))),
         new TelemetryPacket("Automatic State", automaticState.name())
         };
     }
@@ -396,6 +453,8 @@ public class GameTeleop extends LinearOpMode {
             intake.setPower(-1);
         }
         intakeServo.setPower(1);
+
+        tryHerderDown = true;
     }
 
     private void SwitchToShooting() {
@@ -412,6 +471,8 @@ public class GameTeleop extends LinearOpMode {
         keepIntakeOn = true;
         intake.setPower(1);
         intakeStartTime = System.nanoTime();
+        
+        putHerdersUp();
     }
 
     private void WobbleStateSubroutine() {
@@ -648,6 +709,12 @@ public class GameTeleop extends LinearOpMode {
         }else if(driveState == DriveState.NORMAL_AUTOMATIC){
             NormalAutomaticLoop(poseEstimate);
         }else if(driveState == DriveState.POWERSHOT_AUTOMATIC) {
+            if(!drive.isBusy() && powerShotStep == 1) {
+                powerShotStep = 2;
+                drive.turnAsync(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.RIGHT))+rightShotOffset));
+            } else if(!drive.isBusy() && powerShotStep ==2 ) {
+                allowPowershotMachine = true;
+            }
         }
 
         currentAState = gamepad1.a;
@@ -661,7 +728,9 @@ public class GameTeleop extends LinearOpMode {
                 NormalAutomaticCalculations(poseEstimate);
             } else if(driveState == DriveState.NORMAL_AUTOMATIC || driveState == DriveState.POWERSHOT_AUTOMATIC) {
                 driveState = DriveState.DRIVER_CONTROL;
+                allowPowershotMachine = false;
                 drive.cancelFollowing();
+                webcam.setPipeline(highGoalPipeline);
             }
         }
 
@@ -669,8 +738,10 @@ public class GameTeleop extends LinearOpMode {
             if(driveState == DriveState.DRIVER_CONTROL) {
                 driveState = DriveState.POWERSHOT_AUTOMATIC;
                 shooterState = ShooterState.PowerShot;
+                webcam.setPipeline(powershotPipeline);
                 turnStep = 1;
-
+                powerShotStep = 1;
+                /*
                 if(currentPowerShot == Powershot.Left) currentPowerShotTargetPoint = powerShotShootingPointLeft;
                 else if(currentPowerShot == Powershot.Center) currentPowerShotTargetPoint = powerShotShootingPointCenter;
                 else if(currentPowerShot == Powershot.Right) currentPowerShotTargetPoint = powerShotShootingPointRight;
@@ -678,9 +749,16 @@ public class GameTeleop extends LinearOpMode {
                 Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
                         .lineToLinearHeading(new Pose2d(currentPowerShotTargetPoint.x, currentPowerShotTargetPoint.y,0))
                         .build();
+                */
+
+                Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
+                        .lineToLinearHeading(new Pose2d(-4, -24, 0))
+                        .build();
                 drive.followTrajectoryAsync(trajectory);
             } else if (driveState == DriveState.POWERSHOT_AUTOMATIC || driveState == DriveState.NORMAL_AUTOMATIC) {
                 driveState = DriveState.DRIVER_CONTROL;
+                currentPowerShot = Powershot.Right;
+                webcam.setPipeline(highGoalPipeline);
                 drive.cancelFollowing();
             }
         }
@@ -688,6 +766,7 @@ public class GameTeleop extends LinearOpMode {
         if(currentYState && currentYState != prevYState) {
             if(driveState  != DriveState.ANGLEVISION) {
                 drive.cancelFollowing();
+                webcam.setPipeline(highGoalPipeline);
                 driveState = DriveState.ANGLEVISION;
             } else if(driveState == DriveState.ANGLEVISION) {
                 driveState = DriveState.DRIVER_CONTROL;
@@ -697,13 +776,13 @@ public class GameTeleop extends LinearOpMode {
         }
         prevYState = currentYState;
         if(driveState == DriveState.ANGLEVISION) {
-            double yaw = pipeline.calculateYaw(UGAngleHighGoalPipeline.Target.RED);
+            double yaw = highGoalPipeline.calculateYaw(UGAngleHighGoalPipeline.Target.RED);
             if(!drive.isBusy() && shouldFollow) {
-                if(pipeline.isRedVisible()) {
+                if(highGoalPipeline.isRedVisible()) {
                     if(yaw >= 0) {
-                        drive.turnAsync(-Math.toRadians(yaw-5));
+                        drive.turnAsync(-Math.toRadians(yaw+leftFactor));
                     }else if(yaw <=0) {
-                        drive.turnAsync(-Math.toRadians(yaw+5));
+                        drive.turnAsync(-Math.toRadians(yaw-rightFactor));
                     }
                     shouldFollow = false;
                 }
@@ -716,39 +795,57 @@ public class GameTeleop extends LinearOpMode {
         dpadRight = gamepad1.dpad_right;
         dpadCurrentSate = dpadLeft || dpadRight;
 
-        if(dpadCurrentSate && dpadCurrentSate != dpadPrevState && driveState == DriveState.POWERSHOT_AUTOMATIC) {
+        if(dpadCurrentSate && dpadCurrentSate != dpadPrevState && driveState == DriveState.POWERSHOT_AUTOMATIC && allowPowershotMachine) {
             drive.cancelFollowing();
             if(dpadLeft) {
                 if(currentPowerShot == Powershot.Left) {
-                    //Do nothing
+                    driveState = DriveState.DRIVER_CONTROL;
+                    currentPowerShot = Powershot.Right;
+                    webcam.setPipeline(highGoalPipeline);
                 } else if(currentPowerShot == Powershot.Center) {
                     currentPowerShot = Powershot.Left;
+                    /*
                     Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
                             .lineToLinearHeading(new Pose2d(powerShotShootingPointLeft.x, powerShotShootingPointLeft.y,0))
                             .build();
                     drive.followTrajectoryAsync(trajectory);
+
+                     */
+                    drive.turnAsync(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.LEFT))+leftShotOffset));
                 } else if(currentPowerShot == Powershot.Right) {
                     currentPowerShot = Powershot.Center;
+                    /*
                     Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
                             .lineToLinearHeading(new Pose2d(powerShotShootingPointCenter.x, powerShotShootingPointCenter.y,0))
                             .build();
                     drive.followTrajectoryAsync(trajectory);
+
+                     */
+                    drive.turnAsync(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.CENTER))+centerShotOffset));
                 }
-            } else if(dpadRight) {
+            } else if(dpadRight && false) {
                 if(currentPowerShot == Powershot.Left) {
                     currentPowerShot = Powershot.Center;
+                    /*
                     Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
                             .lineToLinearHeading(new Pose2d(powerShotShootingPointCenter.x, powerShotShootingPointCenter.y,0))
                             .build();
                     drive.followTrajectoryAsync(trajectory);
+
+                     */
+                    drive.turnAsync(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.CENTER))+centerShotOffset));
                 } else if(currentPowerShot == Powershot.Center) {
                     currentPowerShot = Powershot.Right;
+                    /*
                     Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
                             .lineToLinearHeading(new Pose2d(powerShotShootingPointRight.x, powerShotShootingPointRight.y,0))
                             .build();
                     drive.followTrajectoryAsync(trajectory);
+
+                     */
+
+                    drive.turnAsync(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.RIGHT))+rightShotOffset));
                 } else if(currentPowerShot == Powershot.Right) {
-                    driveState = DriveState.DRIVER_CONTROL;
                 }
             }
         }
@@ -769,18 +866,20 @@ public class GameTeleop extends LinearOpMode {
             drive.turnAsync(Angle.normDelta(drive.headingFromPoint(currentXPos, currentYPos) - poseEstimate.getHeading()));
             automaticState = AutomaticState.AngleVision;
         } else if(!drive.isBusy() && automaticState == AutomaticState.AngleVision) {
-            double yaw = pipeline.calculateYaw(UGAngleHighGoalPipeline.Target.RED);
-            if(pipeline.isRedVisible()) {
+            double yaw = highGoalPipeline.calculateYaw(UGAngleHighGoalPipeline.Target.RED);
+            if(highGoalPipeline.isRedVisible()) {
                 if(yaw >= 0) {
-                    drive.turnAsync(-Math.toRadians(yaw+5));
+                    drive.turnAsync(-Math.toRadians(yaw+leftFactor));
                 }else if(yaw <= 0) {
-                    drive.turnAsync(-Math.toRadians(yaw));
+                    drive.turnAsync(-Math.toRadians(yaw-rightFactor));
                 }
                 shouldFollow = false;
             }
             automaticState = AutomaticState.Finish;
         } else if(!drive.isBusy() && automaticState == AutomaticState.Finish) {
             driveState = DriveState.DRIVER_CONTROL;
+            lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.SKY_BLUE);
+            lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.SKY_BLUE);
         }
     }
 
@@ -795,8 +894,9 @@ public class GameTeleop extends LinearOpMode {
 
         automaticState = AutomaticState.GoToLine;
         //This runs if we're already behing the shooing line
-        if(poseEstimate.getX() <= constraintFront && poseEstimate.getX() >= constraintBack && poseEstimate.getY() <= constraintLeft && poseEstimate.getY() >= constraintRight) {
-            if((poseEstimate.getHeading() <= Math.toRadians(45) || poseEstimate.getHeading() >= Math.toRadians(315)) && pipeline.isRedVisible()) {
+        //if(poseEstimate.getX() <= constraintFront && poseEstimate.getX() >= constraintBack && poseEstimate.getY() <= constraintLeft && poseEstimate.getY() >= constraintRight) {
+        if(false) {
+            if((poseEstimate.getHeading() <= Math.toRadians(45) || poseEstimate.getHeading() >= Math.toRadians(315)) && highGoalPipeline.isRedVisible()) {
                 automaticState = AutomaticState.AngleVision;
             } else {
                 automaticState = AutomaticState.AngleOdo;
@@ -811,7 +911,8 @@ public class GameTeleop extends LinearOpMode {
                 yPos = constraintLeft;
             }
             Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
-                    .lineToLinearHeading(new Pose2d(constraintFront, yPos, drive.headingFromPoints(currentXPos, currentYPos, constraintFront, yPos)))
+                    //.lineToLinearHeading(new Pose2d(constraintFront, yPos, drive.headingFromPoints(goalXPos, goalYPos, constraintFront, yPos)))
+                    .lineToLinearHeading(new Pose2d(-4, -24, drive.headingFromPoints(goalXPos, goalYPos, -4, -24)))
                     .build();
             drive.followTrajectoryAsync(trajectory);
         }
@@ -838,6 +939,10 @@ public class GameTeleop extends LinearOpMode {
         backPlate = hardwareMap.servo.get("backplate");
         flicker = hardwareMap.servo.get("flicker");
 
+        //For the ring herder
+        herderServoLeft = hardwareMap.servo.get("herder_left");
+        herderServoRight = hardwareMap.servo.get("herder_right");
+
         lights = hardwareMap.get(RevBlinkinLedDriver.class, "lights");
         lights2 = hardwareMap.get(RevBlinkinLedDriver.class, "lights2");
 
@@ -860,8 +965,11 @@ public class GameTeleop extends LinearOpMode {
         backPlate.setPosition(1);
         flicker.setPosition(0.23);
 
-        wobbleLifter.setPosition(0.66);
+        wobbleLifter.setPosition(wobbleLifterUpPos);
         ringKnocker.setPosition(0);
+
+        herderServoLeft.setPosition(0);
+        herderServoRight.setPosition(1);
     }
 
     private enum GameState {Shooting, Intake}
@@ -877,6 +985,8 @@ public class GameTeleop extends LinearOpMode {
     private enum Powershot {Left, Center, Right}
 
     private enum WobbleState {Initial, DownOpen, VerticalClosed, DropWobble, RetractedClosed}
+
+    private enum HerderState { Down, Up}
 
     private enum AutomaticState {GoToLine, AngleOdo, AngleVision, Finish}
 
