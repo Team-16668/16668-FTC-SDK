@@ -24,6 +24,7 @@ import org.firstinspires.ftc.teamcode.RandomTools.Vision.OpenCVWebcam;
 import org.firstinspires.ftc.teamcode.Roadrunner.PoseStorage;
 import org.firstinspires.ftc.teamcode.Roadrunner.drive.DriveConstants;
 import org.firstinspires.ftc.teamcode.Roadrunner.drive.SampleMecanumDrive;
+import org.firstinspires.ftc.teamcode.Vision.CustomPowershotPipelineRed;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
@@ -34,6 +35,7 @@ import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 import org.openftc.easyopencv.OpenCvPipeline;
+import org.openftc.easyopencv.OpenCvSwitchableWebcam;
 import org.openftc.easyopencv.OpenCvWebcam;
 
 import java.util.Arrays;
@@ -57,12 +59,20 @@ public class Auton extends LinearOpMode {
 
     ElapsedTime timer;
 
-    OpenCvWebcam webcam;
-    SkystoneDeterminationPipeline pipeline;
+    OpenCvWebcam topcam;
+    OpenCvWebcam bottomCam;
+    OpenCvSwitchableWebcam switchableWebcam;
+    SkystoneDeterminationPipeline ringPipeline;
+    CustomPowershotPipelineRed powershotPipeline;
 
     double flickerStartTime;
 
-    double wobbleLifterUpPos = 0.665;
+    double wobbleLifterUpPos = 0.649;
+
+    public static double leftShotOffset  = -3;
+    public static double centerShotOffset = -3;
+    public static double rightShotOffset = -4;
+
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -85,7 +95,8 @@ public class Auton extends LinearOpMode {
         //Powershot Trajectories
         setTelemetryData("Status", "Building Powershot trajectories");
         Trajectory startToPowershotPos = drive.trajectoryBuilder(new Pose2d(-62, -26, Math.toRadians(0)))
-                .lineToLinearHeading(new Pose2d(-10, -9.5, /*drive.headingFromPoints(72, -10,-10, -10)*/0))
+                //.lineToLinearHeading(new Pose2d(-10, -9.5, /*drive.headingFromPoints(72, -10,-10, -10)*/0))
+                .lineToLinearHeading(new Pose2d(-4, -24,0))
                 .build();
 
         Trajectory powershotPosToCenterPowershot = drive.trajectoryBuilder(startToPowershotPos.end())
@@ -98,15 +109,16 @@ public class Auton extends LinearOpMode {
 
         //Zero Ring Trajectories
         setTelemetryData("Status", "Building zero rings trajectories");
-        Trajectory powerShotToWobbleZeroRing = drive.trajectoryBuilder(powershotPosToRightPowershot.end())
+        //Trajectory powerShotToWobbleZeroRing = drive.trajectoryBuilder(powershotPosToRightPowershot.end())
+        Trajectory powerShotToWobbleZeroRing = drive.trajectoryBuilder(startToPowershotPos.end())
                 .lineToLinearHeading(new Pose2d(15, -53, Math.toRadians(90)))
                 .build();
 
         Trajectory wobbleToWobble2ZeroRing = drive.trajectoryBuilder(powerShotToWobbleZeroRing.end())
                 .splineToLinearHeading(new Pose2d(15, -45, Math.toRadians(90)), 0)
-                .addDisplacementMarker(() -> { putWobbleLifterDown(); })
-                .splineToSplineHeading(new Pose2d(-22, -46, Math.toRadians(270)), 0)
-                .splineToConstantHeading(new Vector2d(-40, -43),  0,  new MinVelocityConstraint(
+                .addDisplacementMarker(() -> { putWobbleLifterDown(); grabWobble();})
+                .splineToSplineHeading(new Pose2d(-21, -46, Math.toRadians(270)), 0)
+                .splineToConstantHeading(new Vector2d(-41, -46),  0,  new MinVelocityConstraint(
                                 Arrays.asList(
                                         new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
                                         new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
@@ -127,16 +139,39 @@ public class Auton extends LinearOpMode {
                     lowerBackplate();
                     grabWobble();
                 })
-                .splineToSplineHeading(new Pose2d(52, -10, 0), 0)
+                .splineToSplineHeading(new Pose2d(50, -10, 0), 0)
                 .addDisplacementMarker(() -> {setShooterRPM(3650);})
-                .splineToSplineHeading(new Pose2d(-4, -24, Math.toRadians(355)), 0)
+                .splineToSplineHeading(new Pose2d(-4, -24, Math.toRadians(350)), 0)
                 .addDisplacementMarker(() -> {
                     liftBackplate(); stopIntake();
+                })
+                //Dancing
+                .addSpatialMarker(new Vector2d(48, -24), () -> {
+                    //herderServoLeft.setPosition(1);
+                    herderServoRight.setPosition(0);
+                    putDownRingKnocker();
+                })
+                .addSpatialMarker(new Vector2d(36, -24), () -> {
+                    herderServoLeft.setPosition(0);
+                    herderServoRight.setPosition(1);
+                    liftUpRingKnocker();
+                })
+                .addSpatialMarker(new Vector2d(24, -24), () -> {
+                    herderServoLeft.setPosition(1);
+                    herderServoRight.setPosition(0);
+                    putDownRingKnocker();
+                })
+                .addSpatialMarker(new Vector2d(12, -24), () -> {
+                    herderServoLeft.setPosition(0);
+                    herderServoRight.setPosition(1);
+                    liftUpRingKnocker();
                 })
                 .build();
 
         Trajectory park = drive.trajectoryBuilder(pickUpRingsZeroRings.end())
-                .addDisplacementMarker(() -> { putWobbleLifterUp(); })
+                .addDisplacementMarker(() -> { putWobbleLifterUp();
+                    herderServoLeft.setPosition(0);
+                    herderServoRight.setPosition(1);})
                 .lineToConstantHeading(new Vector2d(9, -36))
                 .build();
 
@@ -150,7 +185,7 @@ public class Auton extends LinearOpMode {
         Trajectory pickUpOneRing = drive.trajectoryBuilder(shootInitialOneRing.end())
                 .addDisplacementMarker(() -> {
                     runIntakeForward();
-                    setShooterRPM(3200);
+                    setShooterRPM(3375);
                     lowerBackplate();
                 })
                 .splineToConstantHeading(new Vector2d(-12, -36), 0)
@@ -271,17 +306,35 @@ public class Auton extends LinearOpMode {
 
         //Webcam initialization
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
-        webcam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "webcam"), cameraMonitorViewId);
-        pipeline = new SkystoneDeterminationPipeline();
 
-        webcam.setPipeline(pipeline);
+        int[] viewportContainerIds = OpenCvCameraFactory.getInstance()
+                .splitLayoutForMultipleViewports(
+                        cameraMonitorViewId, //The container we're splitting
+                        2, //The number of sub-containers to create
+                        OpenCvCameraFactory.ViewportSplitMethod.VERTICALLY); //Whether to split the container vertically or horizontally
 
-        webcam.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener()
+        topcam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "goal_webcam"), viewportContainerIds[0]);
+        bottomCam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "webcam"), viewportContainerIds[1]);
+        ringPipeline = new SkystoneDeterminationPipeline();
+        powershotPipeline = new CustomPowershotPipelineRed(60, 0, 0);
+
+        bottomCam.setPipeline(ringPipeline);
+        topcam.setPipeline(powershotPipeline);
+
+        bottomCam.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener()
         {
             @Override
             public void onOpened()
             {
-                webcam.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);
+                bottomCam.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);
+            }
+        });
+        topcam.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener()
+        {
+            @Override
+            public void onOpened()
+            {
+                topcam.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);
             }
         });
 
@@ -289,13 +342,13 @@ public class Auton extends LinearOpMode {
         telemetry.update();
 
         while(!opModeIsActive() && !isStopRequested()) {
-            if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
+            if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
                 lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.RED);
                 lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.RED);
-            }else if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
+            }else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
                 lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
                 lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
-            }else if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.FOUR) {
+            }else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.FOUR) {
                 lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
                 lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
             }
@@ -310,37 +363,45 @@ public class Auton extends LinearOpMode {
         ringKnocker.setPosition(1);
         sleep(500);
 
-        telemetry.addData("Analysis", pipeline.getAnalysis());
-        telemetry.addData("Position", pipeline.position);
+        telemetry.addData("Analysis", ringPipeline.getAnalysis());
+        telemetry.addData("Position", ringPipeline.position);
         telemetry.update();
 
-        if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
+        if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
             //Zero Rings
-            webcam.stopStreaming();
+            bottomCam.stopStreaming();
             lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.RED);
             lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.RED);
-        } else if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
+        } else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
             //One Ring
-            webcam.stopStreaming();
+            bottomCam.stopStreaming();
             lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
             lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
-        } else if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.FOUR) {
+        } else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.FOUR) {
             //Four Rings
-            webcam.stopStreaming();
+            bottomCam.stopStreaming();
             lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
             lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
         }
 
-        if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
-            setShooterRPM(3200);
+        if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
+            setShooterRPM(3375);
             liftUpRingKnocker();
             drive.followTrajectory(startToPowershotPos);
             sleep(1000);
+            drive.turn(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.RIGHT))+rightShotOffset));
+            Flick();
+            drive.turn(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.CENTER))+centerShotOffset));
+            Flick();
+            drive.turn(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.LEFT))+leftShotOffset));
+            Flick();
+            /* old powershot things
             Flick();
             drive.followTrajectory(powershotPosToCenterPowershot);
             Flick();
             drive.followTrajectory(powershotPosToRightPowershot);
             Flick();
+             */
             setShooterRPM(0);
             lowerBackplate();
             followAsyncArm(powerShotToWobbleZeroRing, -0.45);
@@ -359,7 +420,7 @@ public class Auton extends LinearOpMode {
             Flick();
             Flick();
             drive.followTrajectory(park);
-        } else if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
+        } else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
             setShooterRPM(3700);
             liftUpRingKnocker();
             drive.followTrajectory(shootInitialOneRing);
@@ -389,7 +450,7 @@ public class Auton extends LinearOpMode {
             Trajectory trajectory = drive.trajectoryBuilder(poseEstimate).lineToLinearHeading(new Pose2d(poseEstimate.getX(), poseEstimate.getY()+12, 0)).build();
             drive.followTrajectory(trajectory);
             drive.followTrajectory(parkOneRing);
-        } else if(pipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.FOUR) {
+        } else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.FOUR) {
             drive.followTrajectory(shootInitialFourRing);
             Flick();
             Flick();
@@ -483,6 +544,7 @@ public class Auton extends LinearOpMode {
         backPlate.setPosition(0);
         flicker.setPosition(0.23);
         herderServoLeft.setPosition(0);
+        herderServoRight.setPosition(1);
 
         ringKnocker.setPosition(0);
         wobbleLifter.setPosition(wobbleLifterUpPos);
@@ -567,11 +629,11 @@ public class Auton extends LinearOpMode {
     }
 
     public void putWobbleLifterDown() {
-        wobbleLifter.setPosition(0.85);
+        wobbleLifter.setPosition(0.78);
     }
 
     public void liftWobble() {
-        wobbleLifter.setPosition(0.75);
+        wobbleLifter.setPosition(0.74);
     }
 
     public void putWobbleLifterUp() {

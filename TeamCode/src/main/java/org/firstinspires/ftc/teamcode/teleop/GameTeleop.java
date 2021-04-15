@@ -62,14 +62,14 @@ public class GameTeleop extends LinearOpMode {
 
     boolean tryHerderDown = true;
 
-    double wobbleLifterUpPos = 0.665;
+    double wobbleLifterUpPos = 0.649;
 
     public static double leftFactor = 9;
     public static double rightFactor = 0;
 
-    public static double leftShotOffset  = 0;
-    public static double centerShotOffset = 0;
-    public static double rightShotOffset = 0;
+    public static double leftShotOffset  = -3;
+    public static double centerShotOffset = -3;
+    public static double rightShotOffset = -4;
 
     //Global Game State Variable
     FtcDashboard dashboard = FtcDashboard.getInstance();
@@ -124,8 +124,8 @@ public class GameTeleop extends LinearOpMode {
     public static double totalFlickTime = 0.5;
 
     //Logic for Shooter
-    public static double normalTargetRPM = 3650;
-    public static double powerShotTargetRPM = 3300;
+    public static double normalTargetRPM = 3710;
+    public static double powerShotTargetRPM = 3375;
     double shooterStartTime,
             shooterTargetRPM = normalTargetRPM;
     InterpLUT shooterLut;
@@ -421,7 +421,7 @@ public class GameTeleop extends LinearOpMode {
             flicker.setPosition(0);
             flickerStartTime = System.nanoTime();
             firstReturn = true;
-            tryHerderDown = true;
+            //tryHerderDown = true;
         }
     }
 
@@ -739,6 +739,7 @@ public class GameTeleop extends LinearOpMode {
             if(driveState == DriveState.DRIVER_CONTROL) {
                 driveState = DriveState.POWERSHOT_AUTOMATIC;
                 shooterState = ShooterState.PowerShot;
+                lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.YELLOW);
                 webcam.setPipeline(powershotPipeline);
                 turnStep = 1;
                 powerShotStep = 1;
@@ -856,7 +857,7 @@ public class GameTeleop extends LinearOpMode {
         prevBState = currentBState;
 
         if(gamepad1.left_trigger != 0 && gamepad1.right_trigger != 0 && gamepad1.x) {
-            drive.setPoseEstimate(new Pose2d(62, 11.7, 0));
+            drive.setPoseEstimate(new Pose2d(62.47, 13.12, 0));
         }
     }
 
@@ -879,7 +880,6 @@ public class GameTeleop extends LinearOpMode {
             automaticState = AutomaticState.Finish;
         } else if(!drive.isBusy() && automaticState == AutomaticState.Finish) {
             driveState = DriveState.DRIVER_CONTROL;
-            lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.SKY_BLUE);
             lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.SKY_BLUE);
         }
     }
@@ -913,7 +913,8 @@ public class GameTeleop extends LinearOpMode {
             }
             Trajectory trajectory = drive.trajectoryBuilder(poseEstimate)
                     //.lineToLinearHeading(new Pose2d(constraintFront, yPos, drive.headingFromPoints(goalXPos, goalYPos, constraintFront, yPos)))
-                    .lineToLinearHeading(new Pose2d(-4, -24, drive.headingFromPoints(goalXPos, goalYPos, -4, -24)))
+                    //.lineToLinearHeading(new Pose2d(-4, -24, drive.headingFromPoints(goalXPos, goalYPos, -4, -24)))
+                    .lineToLinearHeading(new Pose2d(-4, -24, Math.toRadians(351)))
                     .build();
             drive.followTrajectoryAsync(trajectory);
         }
