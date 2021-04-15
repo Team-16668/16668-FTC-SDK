@@ -388,7 +388,7 @@ public class Auton extends LinearOpMode {
             setShooterRPM(3375);
             liftUpRingKnocker();
             drive.followTrajectory(startToPowershotPos);
-            sleep(1000);
+            sleep(0);
             drive.turn(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.RIGHT))+rightShotOffset));
             Flick();
             drive.turn(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.CENTER))+centerShotOffset));
