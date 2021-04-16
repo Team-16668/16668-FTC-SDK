@@ -125,7 +125,7 @@ public class GameTeleop extends LinearOpMode {
 
     //Logic for Shooter
     public static double normalTargetRPM = 3710;
-    public static double powerShotTargetRPM = 3375;
+    public static double powerShotTargetRPM = 3365;
     double shooterStartTime,
             shooterTargetRPM = normalTargetRPM;
     InterpLUT shooterLut;

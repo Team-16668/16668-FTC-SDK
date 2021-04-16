@@ -116,6 +116,11 @@ public class CustomPowershotPipelineRed extends OpenCvPipeline {
 
         Core.extractChannel(matYCrCb, redChannel, 1);
 
+        /* For ring detection
+        our team did a mask of orange with the range of 0 -> 255 on Y, 141 -> 230 on Cr, 0 -> 110 on Cb
+        Core.inRange()
+         */
+
         // Red threshold
         Imgproc.threshold(redChannel, redThreshold, minThreshold, maxThreshold, Imgproc.THRESH_BINARY);
 
