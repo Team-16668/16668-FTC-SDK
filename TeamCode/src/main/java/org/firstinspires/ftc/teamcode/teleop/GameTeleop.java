@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
+import android.os.NetworkOnMainThreadException;
+
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -803,6 +805,8 @@ public class GameTeleop extends LinearOpMode {
                 if(currentPowerShot == Powershot.Left) {
                     driveState = DriveState.DRIVER_CONTROL;
                     currentPowerShot = Powershot.Right;
+                    SwitchToShooting();
+                    shooterState = ShooterState.Normal;
                     webcam.setPipeline(highGoalPipeline);
                 } else if(currentPowerShot == Powershot.Center) {
                     currentPowerShot = Powershot.Left;

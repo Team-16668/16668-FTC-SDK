@@ -114,7 +114,7 @@ public class Auton extends LinearOpMode {
         setTelemetryData("Status", "Building zero rings trajectories");
         //Trajectory powerShotToWobbleZeroRing = drive.trajectoryBuilder(powershotPosToRightPowershot.end())
         Trajectory powerShotToWobbleZeroRing = drive.trajectoryBuilder(startToPowershotPos.end())
-                .lineToLinearHeading(new Pose2d(17, -53, Math.toRadians(90)))
+                .lineToLinearHeading(new Pose2d(20, -53, Math.toRadians(90)))
                 .build();
 
         Trajectory wobbleToWobble2ZeroRing = drive.trajectoryBuilder(powerShotToWobbleZeroRing.end())
@@ -131,7 +131,7 @@ public class Auton extends LinearOpMode {
                 .build();
 
         Trajectory dropWobble2ZeroRing = drive.trajectoryBuilder(wobbleToWobble2ZeroRing.end())
-                .lineToLinearHeading(new Pose2d(7, -43, 0))
+                .lineToLinearHeading(new Pose2d(7, -44, 0))
                 .build();
 
         Trajectory pickUpRingsZeroRings = drive.trajectoryBuilder(new Pose2d(7, -9, 0))
@@ -246,16 +246,16 @@ public class Auton extends LinearOpMode {
                 .addDisplacementMarker(() -> {
                     setShooterRPM(3770);
                 })
-                .lineToLinearHeading(new Pose2d(-39, -37, Math.toRadians(358)))
+                .lineToLinearHeading(new Pose2d(-40, -37, Math.toRadians(358)))
                 .build();
 
         Trajectory pickUpTwoRingsFourRing = drive.trajectoryBuilder(shootInitialFourRing.end())
                 .addDisplacementMarker(() -> {
                     lowerBackplate();
                     runIntakeForward();
-                    setShooterRPM(3675);
+                    setShooterRPM(3685);
                 })
-                .lineToLinearHeading(new Pose2d(-23, -37, 0),  new MinVelocityConstraint(
+                .lineToLinearHeading(new Pose2d(-25, -37, 0),  new MinVelocityConstraint(
                                 Arrays.asList(
                                         new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
                                         new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
@@ -283,6 +283,7 @@ public class Auton extends LinearOpMode {
                                 )
                         ),
                         new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
+                .addDisplacementMarker(() -> {lowerBackplate();})
                 .build();
 
         Trajectory getAwayFromWobble2FourRing = drive.trajectoryBuilder(deliverWobbleFourRing.end())
@@ -291,19 +292,21 @@ public class Auton extends LinearOpMode {
                 .build();
 
         Trajectory wobbleToWobble2FourRing = drive.trajectoryBuilder(deliverWobbleFourRing.end())
+                .addDisplacementMarker(() -> {runIntakeForward();})
                 .splineToConstantHeading(new Vector2d(36, -36), 0)
-                .addDisplacementMarker(() -> {putWobbleLifterDown();})
-                .splineToSplineHeading(new Pose2d(-22, -47, Math.toRadians(270)), 0, new MinVelocityConstraint(
+                .addSpatialMarker(new Vector2d(-12, -36), () -> {putWobbleLifterDown();})
+                .splineToSplineHeading(new Pose2d(-22, -46, Math.toRadians(270)), 0, new MinVelocityConstraint(
                                 Arrays.asList(
                                         new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
                                         new MecanumVelocityConstraint(62, DriveConstants.TRACK_WIDTH)
                                 )
                         ),
                         new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
+                .addDisplacementMarker(() -> {stopIntake();})
                 .build();
 
         Trajectory wobblePart2FourRing = drive.trajectoryBuilder(wobbleToWobble2FourRing.end())
-                .lineToConstantHeading(new Vector2d(-40, -47),  new MinVelocityConstraint(
+                .lineToConstantHeading(new Vector2d(-40, -46),  new MinVelocityConstraint(
                                 Arrays.asList(
                                         new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
                                         new MecanumVelocityConstraint(12, DriveConstants.TRACK_WIDTH)
@@ -320,7 +323,7 @@ public class Auton extends LinearOpMode {
                                 )
                         ),
                         new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
-                .splineToSplineHeading(new Pose2d(51, -42, 0), 0, new MinVelocityConstraint(
+                .splineToSplineHeading(new Pose2d(51, -43, 0), 0, new MinVelocityConstraint(
                         Arrays.asList(
                                 new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
                                 new MecanumVelocityConstraint(62, DriveConstants.TRACK_WIDTH)
@@ -328,19 +331,6 @@ public class Auton extends LinearOpMode {
                 ),
                 new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
                 .build();
-
-            Trajectory finalPart = drive.trajectoryBuilder(new Pose2d(51, -30, 0))
-                    .addDisplacementMarker(() -> {
-                        releaseWobble();
-                    })
-                    .lineToConstantHeading(new Vector2d(24, -24),  new MinVelocityConstraint(
-                                    Arrays.asList(
-                                            new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
-                                            new MecanumVelocityConstraint(62, DriveConstants.TRACK_WIDTH)
-                                    )
-                            ),
-                            new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
-                    .build();
 
         //Webcam initialization
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
@@ -513,7 +503,7 @@ public class Auton extends LinearOpMode {
             followAsyncArm(deliverWobbleFourRing, -0.45);
             releaseWobble();
             setShooterRPM(0);
-            sleep(500);
+            sleep(250);
             //drive.followTrajectory(getAwayFromWobble2FourRing);
             drive.followTrajectory(wobbleToWobble2FourRing);
             drive.followTrajectory(wobblePart2FourRing);
@@ -525,17 +515,17 @@ public class Auton extends LinearOpMode {
             Pose2d poseEstimate = drive.getPoseEstimate();
             Trajectory parkTrajectory = drive.trajectoryBuilder(poseEstimate)
                     .splineToConstantHeading(new Vector2d(poseEstimate.getX(), poseEstimate.getY() + 12), 0)
-                    .addDisplacementMarker(() -> {putWobbleLifterUp();})
                     .addDisplacementMarker(() -> {
                         releaseWobble();
                     })
-                    .splineToConstantHeading(new Vector2d(25, poseEstimate.getY() + 12), Math.toRadians(180), new MinVelocityConstraint(
+                    .addSpatialMarker(new Vector2d(24, -24), () -> {putWobbleLifterUp();})
+                    .splineToConstantHeading(new Vector2d(18, poseEstimate.getY() + 12), Math.toRadians(180)/*, new MinVelocityConstraint(
                                     Arrays.asList(
                                             new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
                                             new MecanumVelocityConstraint(62, DriveConstants.TRACK_WIDTH)
                                     )
                             ),
-                            new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
+                            new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL)*/)
                     .build();
 
             //drive.followTrajectory(parkTrajectory);
