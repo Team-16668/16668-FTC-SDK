@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import static org.firstinspires.ftc.teamcode.parts.WobbleTurret.MovementState.*;
 import static org.firstinspires.ftc.teamcode.parts.WobbleTurret.TurretState.*;
@@ -27,6 +28,8 @@ public class WobbleTurret {
     double rotaryPower = 0.5;
     double rotaryPowerBack = rotaryPower * -1;
 
+    ElapsedTime timer;
+
     public WobbleTurret(HardwareMap hMap, TurretState startingState) {
         wobbleRotaryMotor = hMap.get(DcMotorEx.class, "wobble_rotary");
         wobbleLinearMotor = hMap.get(DcMotorEx.class, "wobble_linear");
@@ -43,6 +46,8 @@ public class WobbleTurret {
 
         wobbleRotaryMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         wobbleLinearMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        timer = new ElapsedTime();
     }
 
     public void init() {
@@ -65,10 +70,10 @@ public class WobbleTurret {
         if(turretState == STOWED) {
             turretState = FORWARD_OPEN;
         } else if(turretState == FORWARD_OPEN) {
-            turretState = BACK_STOWED;
-        } else if(turretState == BACK_STOWED) {
             turretState = BACK_DROP_POS;
         } else if(turretState == BACK_DROP_POS) {
+            turretState = DROP_BACK;
+        } else if(turretState == DROP_BACK) {
             turretState = FORWARD_OPEN;
         }
 
@@ -97,13 +102,54 @@ public class WobbleTurret {
             if(linearCheck) {
                 clawLift.setPosition(armDown);
             }
-        }else if(turretState == FORWARD_STOWED) {
-            linearInCheck();
-            rotaryForwardCheck();
         }else if(turretState == FORWARD_DROP_POS) {
             linearInCheck();
             rotaryForwardCheck();
-
+        }else if(turretState == BACK_STOWED) {
+            if(timer.seconds() > 0.5) {
+                tryLinearBackward();
+                tryRotaryBackward();
+                clawLift.setPosition(armUp);
+            }
+            linearInCheck();
+            rotaryBackwardCheck();
+        } else if(turretState == BACK_DROP_POS) {
+            if (timer.seconds() > 0.5) {
+                tryLinearBackward();
+                tryRotaryBackward();
+                clawLift.setPosition(armDrop);
+            }
+            linearInCheck();
+            rotaryBackwardCheck();
+        }else if(turretState == BACK_CLOSED) {
+            boolean linearCheck = linearOutCheck();
+            rotaryBackwardCheck();
+            if(linearCheck) {
+                clawLift.setPosition(armDown);
+            }
+        }
+        else if(turretState == FORWARD_DROP_POS) {
+            if (timer.seconds() > 0.5) {
+                tryLinearBackward();
+                tryRotaryForward();
+                clawLift.setPosition(armDrop);
+            }
+            linearInCheck();
+            rotaryForwardCheck();
+        } else if(turretState == FORWARD_STOWED) {
+            if(timer.seconds() > 0.5) {
+                tryLinearBackward();
+                tryRotaryForward();
+                clawLift.setPosition(armUp);
+            }
+            linearInCheck();
+            rotaryForwardCheck();
+        }else if(turretState == BACK_OPEN) {
+            boolean linearCheck = linearOutCheck();
+            rotaryBackwardCheck();
+            if(linearCheck) {
+                clawLift.setPosition(armDown);
+            }
         }
     }
 
@@ -118,42 +164,32 @@ public class WobbleTurret {
             tryRotaryForward();
             tryLinearForward();
             claw.setPosition(clawOpen);
-            //clawLift.setPosition(armDown);
         } else if(state == FORWARD_CLOSED) {
             tryRotaryForward();
             tryLinearForward();
             claw.setPosition(clawClosed);
-            //clawLift.setPosition(armDown);
         }else if(state == FORWARD_STOWED) {
-            tryRotaryForward();
-            tryLinearForward();
             claw.setPosition(clawClosed);
-            clawLift.setPosition(armUp);
+            timer.reset();
         }else if(state == FORWARD_DROP_POS) {
-            tryRotaryForward();
-            tryLinearForward();
             claw.setPosition(clawClosed);
-            clawLift.setPosition(armDrop);
+            timer.reset();
         } else if(state == BACK_OPEN) {
             tryRotaryBackward();
             tryLinearForward();
             claw.setPosition(clawOpen);
-            clawLift.setPosition(armDown);
         } else if(state == BACK_CLOSED) {
             tryRotaryBackward();
             tryLinearForward();
             claw.setPosition(clawClosed);
-            clawLift.setPosition(armDown);
         } else if(state == BACK_STOWED) {
-            tryRotaryBackward();
-            tryLinearForward();
             claw.setPosition(clawClosed);
-            clawLift.setPosition(armUp);
+            timer.reset();
         } else if(state == BACK_DROP_POS) {
-            tryRotaryBackward();
-            tryLinearForward();
             claw.setPosition(clawClosed);
-            clawLift.setPosition(armDrop);
+            timer.reset();
+        } else if(state == DROP_BACK || state == DROP_FORWARD) {
+            claw.setPosition(armDrop);
         }
     }
 
