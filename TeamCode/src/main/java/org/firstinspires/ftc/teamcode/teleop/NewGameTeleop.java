@@ -16,7 +16,6 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -40,7 +39,7 @@ public class NewGameTeleop extends LinearOpMode {
     //Initial Variable initialization
     //Hardware devices
     RevBlinkinLedDriver lights, lights2;
-    DcMotor intake, wobbleArm;
+    DcMotor intake;
     DcMotorEx shooter;
     Servo backPlate, flicker, wobbleLifter, ringKnocker, herderServoLeft, herderServoRight;
     CRServo intakeServo;
@@ -135,8 +134,8 @@ public class NewGameTeleop extends LinearOpMode {
     boolean powerShotPrevButton = false;
 
     //Logic for Wobble Claw and Arm
-    boolean prevDpad = false;
-    boolean currDpad = false;
+    boolean prevWobbleDpad = false;
+    boolean currWobbleDpad = false;
 
     //Logic for the ring herder
     boolean currentDPad = false;
@@ -200,6 +199,7 @@ public class NewGameTeleop extends LinearOpMode {
         drive.setPoseEstimate(PoseStorage.currentPose);
 
         turret = new WobbleTurret(hardwareMap, WobbleTurret.TurretState.STOWED);
+        turret.init();
 
         telemetry.addData("Status", "Init Complete");
         telemetry.update();
@@ -251,11 +251,16 @@ public class NewGameTeleop extends LinearOpMode {
     public void TurretSubroutine() {
         turret.update();
 
-        currDpad = gamepad2.dpad_left;
-        if(currDpad && currDpad != prevDpad) {
+        currWobbleDpad = gamepad2.dpad_left;
+        if(currWobbleDpad && currWobbleDpad != prevWobbleDpad) {
             turret.advanceStateMachineTeleOp();
         }
-        prevDPad = currDpad;
+        prevWobbleDpad = currWobbleDpad;
+
+        if(gamepad2.dpad_right) {
+            turret.setState(WobbleTurret.TurretState.STOWED);
+        }
+
     }
 
     private void HerderSubroutine() {
@@ -311,7 +316,11 @@ public class NewGameTeleop extends LinearOpMode {
         new TelemetryPacket("Goal visisble", Boolean.toString(highGoalPipeline.isRedVisible())),
         new TelemetryPacket("Goal pitch", Double.toString(highGoalPipeline.calculatePitch(UGAngleHighGoalPipeline.Target.RED))),
         new TelemetryPacket("Goal yaw", Double.toString(highGoalPipeline.calculateYaw(UGAngleHighGoalPipeline.Target.RED))),
-        new TelemetryPacket("Automatic State", automaticState.name())
+        new TelemetryPacket("Automatic State", automaticState.name()),
+        new TelemetryPacket("Wobble Goal State", turret.turretState.name()),
+        new TelemetryPacket("Rotary Power", Double.toString(turret.wobbleRotaryMotor.getPower())),
+        new TelemetryPacket("Linear Power", Double.toString(turret.wobbleLinearMotor.getPower())),
+        new TelemetryPacket("Lift Power", Double.toString(turret.clawLift.getPower()))
         };
     }
 
@@ -670,10 +679,6 @@ public class NewGameTeleop extends LinearOpMode {
         ringKnocker = hardwareMap.servo.get("ring_knocker");
         intakeServo = hardwareMap.get(CRServo.class, "intake_servo");
 
-        //For the Wobble Goal
-        wobbleArm = hardwareMap.dcMotor.get("wobble_arm");
-        wobbleLifter = hardwareMap.servo.get("wobble_lifter");
-
         //For the Flicker and Backplate
         backPlate = hardwareMap.servo.get("backplate");
         flicker = hardwareMap.servo.get("flicker");
@@ -682,16 +687,15 @@ public class NewGameTeleop extends LinearOpMode {
         herderServoLeft = hardwareMap.servo.get("herder_left");
         herderServoRight = hardwareMap.servo.get("herder_right");
 
+        //For the wobble lifter
+        wobbleLifter = hardwareMap.servo.get("wobble_lifter");
+
         lights = hardwareMap.get(RevBlinkinLedDriver.class, "lights");
         lights2 = hardwareMap.get(RevBlinkinLedDriver.class, "lights2");
 
         shooter.setDirection(DcMotorSimple.Direction.REVERSE);
 
         shooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
-        wobbleArm.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-
-        wobbleArm.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        wobbleArm.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         //Set all the lights and servos to the correct positions to get ready for the beginning of the game
         lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
