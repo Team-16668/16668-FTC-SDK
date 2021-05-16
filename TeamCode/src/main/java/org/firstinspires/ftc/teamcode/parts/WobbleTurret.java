@@ -12,10 +12,10 @@ import static org.firstinspires.ftc.teamcode.parts.WobbleTurret.MovementState.*;
 import static org.firstinspires.ftc.teamcode.parts.WobbleTurret.TurretState.*;
 
 public class WobbleTurret {
-    private DcMotorEx wobbleRotaryMotor, wobbleLinearMotor;
-    private Servo claw;
-    private CRServo clawLift;
-    private TouchSensor touchForwardRotary, touchBackwardRotary, touchOutLinear, touchInLinear, touchUpLift, touchDownLift;
+    public DcMotorEx wobbleRotaryMotor, wobbleLinearMotor;
+    public Servo claw;
+    public CRServo clawLift;
+    public TouchSensor touchForwardRotary, touchBackwardRotary, touchOutLinear, touchInLinear, touchUpLift, touchDownLift;
 
     private TurretState turretState;
     private MovementState movementState;
@@ -37,7 +37,7 @@ public class WobbleTurret {
         wobbleLinearMotor = hMap.get(DcMotorEx.class, "wobble_linear");
 
         claw = hMap.servo.get("claw");
-        clawLift = hMap.get(CRServo.class, "clawLift");
+        clawLift = hMap.get(CRServo.class, "claw_lift");
 
         touchForwardRotary = hMap.touchSensor.get("rotary_forward");
         touchBackwardRotary = hMap.touchSensor.get("rotary_back");
