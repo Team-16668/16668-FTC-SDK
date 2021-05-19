@@ -8,6 +8,8 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import java.util.concurrent.TimeUnit;
+
 import static org.firstinspires.ftc.teamcode.parts.WobbleTurret.TurretState.*;
 
 public class WobbleTurret {
@@ -16,7 +18,7 @@ public class WobbleTurret {
     public CRServo clawLift;
     public TouchSensor touchForwardRotary, touchBackwardRotary, touchOutLinear, touchInLinear, touchUpLift, touchDownLift;
 
-    private boolean firstTime = true;
+    public boolean firstTime = true;
 
     public boolean busy = false;
 
@@ -29,10 +31,12 @@ public class WobbleTurret {
     double downPower = upPower * -1;
     double linearPower = 0.7;
     double linearPowerBack = linearPower * -1;
-    double rotaryPower = 0.6;
+    double rotaryPower = 0.7;
     double rotaryPowerBack = rotaryPower * -1;
 
-    ElapsedTime timer;
+    public double saveTime;
+
+    public ElapsedTime timer;
 
     public WobbleTurret(HardwareMap hMap, TurretState startingState) {
         wobbleRotaryMotor = hMap.get(DcMotorEx.class, "wobble_rotary");
@@ -72,8 +76,8 @@ public class WobbleTurret {
         if(turretState == STOWED) {
             turretState = FORWARD_OPEN;
         } else if(turretState == FORWARD_OPEN) {
-            turretState = BACK_STOWED;
-        } else if(turretState == BACK_STOWED) {
+            turretState = BACK_CLOSED;
+        } else if(turretState == BACK_CLOSED) {
             turretState = DROP_BACK;
         } else if(turretState == DROP_BACK) {
             turretState = FORWARD_OPEN;
@@ -112,6 +116,10 @@ public class WobbleTurret {
                 tryLiftDown();
             }
             liftDownCheck();
+            if(timer.seconds() > saveTime + 2) {
+                clawLift.setPower(0);
+                busy = false;
+            }
         }else if(turretState == BACK_STOWED) {
             if(timer.seconds() > 0.5 && firstTime) {
                 tryLinearBackward();
@@ -158,7 +166,7 @@ public class WobbleTurret {
             }
         }
 
-        if(wobbleLinearMotor.getPower() == 0 && wobbleRotaryMotor.getPower() == 0 || clawLift.getPower() == 0) {
+        if(wobbleLinearMotor.getPower() == 0 && wobbleRotaryMotor.getPower() == 0) {
             busy = false;
         }
     }
@@ -179,6 +187,7 @@ public class WobbleTurret {
             tryRotaryForward();
             tryLinearForward();
             claw.setPosition(clawClosed);
+            saveTime = timer.seconds();
         }else if(state == FORWARD_STOWED) {
             claw.setPosition(clawClosed);
             timer.reset();
@@ -198,31 +207,31 @@ public class WobbleTurret {
         }
     }
 
-    private void tryRotaryForward() {
+    public void tryRotaryForward() {
         if(!touchForwardRotary.isPressed()) {
             wobbleRotaryMotor.setPower(rotaryPower);
         }
     }
 
-    private void tryRotaryBackward() {
+    public void tryRotaryBackward() {
         if(!touchBackwardRotary.isPressed()) {
             wobbleRotaryMotor.setPower(rotaryPowerBack);
         }
     }
 
-    private void tryLinearForward() {
+    public void tryLinearForward() {
         if(!touchOutLinear.isPressed()) {
             wobbleLinearMotor.setPower(linearPower);
         }
     }
 
-    private void tryLinearBackward() {
+    public void tryLinearBackward() {
         if(!touchInLinear.isPressed()) {
             wobbleLinearMotor.setPower(linearPowerBack);
         }
     }
 
-    private boolean rotaryForwardCheck() {
+    public boolean rotaryForwardCheck() {
         if(touchForwardRotary.isPressed() && wobbleRotaryMotor.getPower() == rotaryPower) {
             wobbleRotaryMotor.setPower(0);
             return true;
@@ -234,7 +243,7 @@ public class WobbleTurret {
         }
     }
 
-    private boolean rotaryBackwardCheck() {
+    public boolean rotaryBackwardCheck() {
         if(touchBackwardRotary.isPressed() && wobbleRotaryMotor.getPower() == rotaryPowerBack) {
             wobbleRotaryMotor.setPower(0);
             return true;
@@ -246,7 +255,7 @@ public class WobbleTurret {
         }
     }
 
-    private boolean linearOutCheck() {
+    public boolean linearOutCheck() {
         if(touchOutLinear.isPressed() && wobbleLinearMotor.getPower() == linearPower) {
             wobbleLinearMotor.setPower(0);
             return true;
@@ -259,7 +268,7 @@ public class WobbleTurret {
         }
     }
 
-    private boolean linearInCheck() {
+    public boolean linearInCheck() {
         if(touchInLinear.isPressed() && wobbleLinearMotor.getPower()== linearPowerBack) {
             wobbleLinearMotor.setPower(0);
             return true;
@@ -272,7 +281,7 @@ public class WobbleTurret {
         }
     }
 
-    private boolean liftUpCheck() {
+    public boolean liftUpCheck() {
         if(touchUpLift.isPressed()) {
             clawLift.setPower(0);
             return true;
@@ -281,7 +290,7 @@ public class WobbleTurret {
         }
     }
 
-    private boolean liftDownCheck() {
+    public boolean liftDownCheck() {
         if(touchDownLift.isPressed()) {
             clawLift.setPower(0);
             return true;
@@ -290,23 +299,28 @@ public class WobbleTurret {
         }
     }
 
-    private void tryLiftUp() {
+    public void tryLiftUp() {
         if(!touchUpLift.isPressed()) {
             clawLift.setPower(upPower);
         }
     }
 
-    private void tryLiftDown() {
+    public void tryLiftDown() {
         if(!touchDownLift.isPressed()) {
             clawLift.setPower(downPower);
         }
     }
 
-    private void stopAll() {
+    public void stopAll() {
         wobbleLinearMotor.setPower(0);
         wobbleRotaryMotor.setPower(0);
         clawLift.setPower(0);
     }
+
+    public TurretState getState() {
+        return turretState;
+    }
+
 
     public enum TurretState {
         STOWED, FORWARD_OPEN, FORWARD_CLOSED, FORWARD_STOWED, DROP_FORWARD, BACK_OPEN, BACK_CLOSED, BACK_STOWED, DROP_BACK

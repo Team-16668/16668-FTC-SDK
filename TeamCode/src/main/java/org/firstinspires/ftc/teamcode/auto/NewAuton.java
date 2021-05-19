@@ -117,12 +117,12 @@ public class NewAuton extends LinearOpMode {
         setTelemetryData("Status", "Building zero rings trajectories");
         //Trajectory powerShotToWobbleZeroRing = drive.trajectoryBuilder(powershotPosToRightPowershot.end())
         Trajectory powerShotToWobbleZeroRing = drive.trajectoryBuilder(startToPowershotPos.end())
-                .lineToLinearHeading(new Pose2d(3, -45, Math.toRadians(315)))
+                .lineToLinearHeading(new Pose2d(-4, -61, Math.toRadians(335)))
                 .build();
 
-        Trajectory wobbleToWobble2ZeroRing = drive.trajectoryBuilder(powerShotToWobbleZeroRing.end())
-                .splineToSplineHeading(new Pose2d(-12, -57, Math.toRadians(0)), Math.toRadians(180))
-                .splineToConstantHeading(new Vector2d(-35, -57),  0,  new MinVelocityConstraint(
+        Trajectory wobbleToWobble2ZeroRing = drive.trajectoryBuilder(new Pose2d(powerShotToWobbleZeroRing.end().getX(), -57, powerShotToWobbleZeroRing.end().getHeading()))
+                .splineToSplineHeading(new Pose2d(-10, -58, 0), Math.toRadians(180))
+                .splineToSplineHeading(new Pose2d(-31, -58, 0),  Math.toRadians(180),  new MinVelocityConstraint(
                                 Arrays.asList(
                                         new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
                                         new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
@@ -132,26 +132,26 @@ public class NewAuton extends LinearOpMode {
                 .build();
 
         Trajectory dropWobble2ZeroRing = drive.trajectoryBuilder(wobbleToWobble2ZeroRing.end())
-                .lineToLinearHeading(new Pose2d(-5, -54, Math.toRadians(315)))
+                .lineToLinearHeading(new Pose2d(-9, -59, Math.toRadians(315)))
                 .build();
 
-        Trajectory pickUpRingsZeroRings = drive.trajectoryBuilder(new Pose2d(7, -9, 0))
-                .splineToConstantHeading(new Vector2d(-24, -48), Math.toRadians(-180))
-                .splineToSplineHeading(new Pose2d(0, -24, 0), Math.toRadians(0))
+        Trajectory pickUpRingsZeroRings = drive.trajectoryBuilder(dropWobble2ZeroRing.end())
+                .splineToConstantHeading(new Vector2d(-14, -50), Math.toRadians(90))
                 .addDisplacementMarker(() -> {
                     lowerBackplate();
                     runIntakeForward();
                 })
-                .splineToSplineHeading(new Pose2d(50, -10, 0), 0)
+                .splineToSplineHeading(new Pose2d(0, -12, Math.toRadians(0)), Math.toRadians(0))
+                .splineToSplineHeading(new Pose2d(50, -12, 0), 0)
                 .addDisplacementMarker(() -> {setShooterRPM(3650);})
-                .splineToSplineHeading(new Pose2d(-4, -24, Math.toRadians(350)), 0)
+                .splineToSplineHeading(new Pose2d(-4, -24, Math.toRadians(345)), 0)
                 .addDisplacementMarker(() -> {
                     liftBackplate(); stopIntake();
                 })
                 .build();
 
         Trajectory park = drive.trajectoryBuilder(pickUpRingsZeroRings.end())
-                .lineToConstantHeading(new Vector2d(9, -36))
+                .lineToLinearHeading(new Pose2d(9, -24, 0))
                 .build();
 
         //1 Ring Trajectories
@@ -348,6 +348,7 @@ public class NewAuton extends LinearOpMode {
         });
 
         telemetry.addData("Status", "Waiting for start");
+        telemetry.addData("Status", "Change acutally worked");
         telemetry.update();
 
         while(!opModeIsActive() && !isStopRequested()) {
@@ -394,7 +395,7 @@ public class NewAuton extends LinearOpMode {
         }
 
         if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
-            setShooterRPM(3200);
+            setShooterRPM(3210);
             liftUpRingKnocker();
             drive.followTrajectory(startToPowershotPos);
             sleep(0);
@@ -407,22 +408,19 @@ public class NewAuton extends LinearOpMode {
             setShooterRPM(0);
             topcam.stopStreaming();
             lowerBackplate();
-            followAsyncArm(powerShotToWobbleZeroRing, FORWARD_CLOSED, 0);
-            turret.claw.setPosition(turret.clawOpen);
+            CustomFollowDrop(powerShotToWobbleZeroRing);
+            DropWobble();
             sleep(500);
             followAsyncArm(wobbleToWobble2ZeroRing, BACK_OPEN, 0.5);
             turret.claw.setPosition(turret.clawClosed);
             sleep(500);
-            followAsyncArm(dropWobble2ZeroRing, FORWARD_CLOSED, 0);
+            CustomFollowDrop(dropWobble2ZeroRing);
             turret.claw.setPosition(turret.clawOpen);
             sleep(500);
-            /*
-            Pose2d poseEstimate = drive.getPoseEstimate();
-            Trajectory trajectory = drive.trajectoryBuilder(poseEstimate).lineToLinearHeading(new Pose2d(poseEstimate.getX(), poseEstimate.getY()+36, 0)).build();
-            drive.followTrajectory(trajectory);
 
-             */
             followAsyncArm(pickUpRingsZeroRings, STOWED, 0.5);
+            Flick();
+            Flick();
             Flick();
             Flick();
             drive.followTrajectory(park);
@@ -565,7 +563,7 @@ public class NewAuton extends LinearOpMode {
 
         timer.reset();
 
-        while(opModeIsActive() && (drive.isBusy() || (turret.busy || timer.seconds()<=delay))) {
+        while(opModeIsActive() && (drive.isBusy() || ((turret.busy || timer.seconds()<=delay)))) {
             if(timer.seconds()>delay) {
                 turret.setState(state);
             }
@@ -573,8 +571,36 @@ public class NewAuton extends LinearOpMode {
             turret.update();
 
             drive.update();
+            telemetry.addData("time", turret.timer.seconds());
+            telemetry.update();
         }
     }
+
+    public void CustomFollowDrop(Trajectory traj) {
+        drive.followTrajectoryAsync(traj);
+
+        turret.tryLinearForward();
+        turret.tryRotaryForward();
+
+        while(opModeIsActive() && drive.isBusy()) {
+            drive.update();
+
+            turret.linearOutCheck();
+            turret.rotaryForwardCheck();
+        }
+    }
+
+    public void DropWobble() {
+        timer.reset();
+        turret.tryLiftDown();
+        while(timer.seconds() < 1) {
+            turret.liftDownCheck();
+        }
+        turret.clawLift.setPower(0);
+        turret.claw.setPosition(turret.clawOpen);
+        sleep(500);
+    }
+
 
     void Flick() {
         flickerStartTime = System.nanoTime();
