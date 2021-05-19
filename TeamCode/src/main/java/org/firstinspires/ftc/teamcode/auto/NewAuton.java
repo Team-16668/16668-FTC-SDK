@@ -157,7 +157,7 @@ public class NewAuton extends LinearOpMode {
         //1 Ring Trajectories
         setTelemetryData("Status", "Building one ring trajectories");
 
-        /*
+
 
         Trajectory shootInitialOneRing = drive.trajectoryBuilder(new Pose2d(-62, -26, Math.toRadians(0)))
                 .lineToConstantHeading(new Vector2d(-36, -38))
@@ -181,21 +181,13 @@ public class NewAuton extends LinearOpMode {
                 .build();
 
         Trajectory wobbleOneRing = drive.trajectoryBuilder(toPowershotRightLeftRing.end())
-                .lineToLinearHeading(new Pose2d(26, -31, Math.toRadians(180)))
+                .lineToLinearHeading(new Pose2d(26, -31, Math.toRadians(0)))
                 .build();
 
-        Trajectory getAwayFromWobbleOneRing = drive.trajectoryBuilder(wobbleOneRing.end())
-                .lineToConstantHeading(new Vector2d(12, -36))
-                .addDisplacementMarker(() -> {liftBackplate(); stopIntake(); grabWobble();})
-                .build();
-
-        Trajectory goToWobbleTwoOneRing = drive.trajectoryBuilder(getAwayFromWobbleOneRing.end())
-                .lineToLinearHeading(new Pose2d(-23, -47, Math.toRadians(270)))
-                .addDisplacementMarker(() -> {putWobbleLifterDown();})
-                .build();
-
-        Trajectory grabWobbleTwoOneRing = drive.trajectoryBuilder(goToWobbleTwoOneRing.end())
-                .lineToConstantHeading(new Vector2d(-41, -47), new MinVelocityConstraint(
+        Trajectory goToWobble2OneRing = drive.trajectoryBuilder(wobbleOneRing.end())
+                .splineToConstantHeading(new Vector2d(0, -40), Math.toRadians(180))
+                .splineToSplineHeading(new Pose2d(-10, -58, 0), Math.toRadians(180))
+                .splineToSplineHeading(new Pose2d(-31, -58, 0),  Math.toRadians(180),  new MinVelocityConstraint(
                                 Arrays.asList(
                                         new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
                                         new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
@@ -205,7 +197,7 @@ public class NewAuton extends LinearOpMode {
                 .build();
 
 
-        Trajectory dropWobble2OneRing = drive.trajectoryBuilder(goToWobbleTwoOneRing.end())
+        Trajectory dropWobble2OneRing = drive.trajectoryBuilder(goToWobble2OneRing.end())
                 .addDisplacementMarker(() -> {
                     lowerBackplate();
                     setShooterRPM(0);
@@ -213,8 +205,22 @@ public class NewAuton extends LinearOpMode {
                 .lineToLinearHeading(new Pose2d(25, -23, 0))
                 .build();
 
-        Trajectory parkOneRing = drive.trajectoryBuilder(new Pose2d(31, -9, 0))
-                .addDisplacementMarker(() -> {putWobbleLifterUp();})
+        Trajectory pickUpRingsOneRing = drive.trajectoryBuilder(dropWobble2OneRing.end())
+                .splineToConstantHeading(new Vector2d(-14, -50), Math.toRadians(90))
+                .addDisplacementMarker(() -> {
+                    lowerBackplate();
+                    runIntakeForward();
+                })
+                .splineToSplineHeading(new Pose2d(0, -12, Math.toRadians(0)), Math.toRadians(0))
+                .splineToSplineHeading(new Pose2d(50, -12, 0), 0)
+                .addDisplacementMarker(() -> {setShooterRPM(3650);})
+                .splineToSplineHeading(new Pose2d(-4, -24, Math.toRadians(345)), 0)
+                .addDisplacementMarker(() -> {
+                    liftBackplate(); stopIntake();
+                })
+                .build();
+
+        Trajectory parkOneRing = drive.trajectoryBuilder(pickUpRingsOneRing.end())
                 .lineToConstantHeading(new Vector2d(9, -12))
                 .build();
 
@@ -311,7 +317,6 @@ public class NewAuton extends LinearOpMode {
                 new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
                 .build();
 
-         */
 
         //Webcam initialization
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
@@ -410,7 +415,6 @@ public class NewAuton extends LinearOpMode {
             lowerBackplate();
             CustomFollowDrop(powerShotToWobbleZeroRing);
             DropWobble();
-            sleep(500);
             followAsyncArm(wobbleToWobble2ZeroRing, BACK_OPEN, 0.5);
             turret.claw.setPosition(turret.clawClosed);
             sleep(500);
@@ -424,7 +428,7 @@ public class NewAuton extends LinearOpMode {
             Flick();
             Flick();
             drive.followTrajectory(park);
-        } /*else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
+        } else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
             setShooterRPM(3770);
             liftUpRingKnocker();
             drive.followTrajectory(shootInitialOneRing);
@@ -441,23 +445,16 @@ public class NewAuton extends LinearOpMode {
             Flick();
             setShooterRPM(0);
             topcam.stopStreaming();
-            followAsyncArm(wobbleOneRing, -0.45);
-            releaseWobble();
-            sleep(600);
-            drive.followTrajectory(getAwayFromWobbleOneRing);
-            drive.followTrajectory(goToWobbleTwoOneRing);
-            followAsyncArm(grabWobbleTwoOneRing, 0.55);
-            liftWobble();
-            sleep(500);
+            CustomFollowDrop(wobbleOneRing);
+            DropWobble();
+            followAsyncArm(goToWobble2OneRing, BACK_OPEN, 0.5);
+            turret.claw.setPosition(turret.clawClosed);
             drive.followTrajectory(dropWobble2OneRing);
-            putWobbleLifterDown();
+            turret.claw.setPosition(turret.clawOpen);
             sleep(500);
-            Pose2d poseEstimate = drive.getPoseEstimate();
-            Trajectory trajectory = drive.trajectoryBuilder(poseEstimate).lineToLinearHeading(new Pose2d(poseEstimate.getX(), poseEstimate.getY()+12, 0)).build();
-            drive.followTrajectory(trajectory);
+
             drive.followTrajectory(parkOneRing);
-        }*/
-        /*else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.FOUR) {
+        } else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.FOUR) {
             drive.followTrajectory(shootInitialFourRing);
             Flick();
             Flick();
@@ -507,7 +504,7 @@ public class NewAuton extends LinearOpMode {
 
             //drive.followTrajectory(parkTrajectory);
             followAsyncArm(parkTrajectory, -1);
-        }*/
+        }
 
 
         PoseStorage.currentPose = drive.getPoseEstimate();
