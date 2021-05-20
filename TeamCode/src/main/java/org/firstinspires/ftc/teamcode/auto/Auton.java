@@ -80,438 +80,392 @@ public class Auton extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
-                setTelemetryData("Status", "Initializing");
+            setTelemetryData("Status", "Initializing");
 
-                drive = new SampleMecanumDrive(hardwareMap);
+            drive = new SampleMecanumDrive(hardwareMap);
 
-                drive.setPoseEstimate(new Pose2d(-62, -26, Math.toRadians(0)));
+            drive.setPoseEstimate(new Pose2d(-62, -26, Math.toRadians(0)));
 
-                timer = new ElapsedTime();
-                //Wonderful timer commands that are probably a lot better than what I have now.
-                /*
-                timer.reset();
-                timer.seconds();
-                 */
+            timer = new ElapsedTime();
+            //Wonderful timer commands that are probably a lot better than what I have now.
+            /*
+            timer.reset();
+            timer.seconds();
+             */
 
-                turret = new WobbleTurret(hardwareMap, STOWED);
-                turret.init();
+            turret = new WobbleTurret(hardwareMap, STOWED);
+            turret.init();
 
-                defineHardware();
-                initialize();
+            defineHardware();
+            initialize();
 
-                //Powershot Trajectories
-                setTelemetryData("Status", "Building Powershot trajectories");
-                Trajectory startToPowershotPos = drive.trajectoryBuilder(new Pose2d(-62, -26, Math.toRadians(0)))
-                        .lineToLinearHeading(new Pose2d(-4, -24,0))
-                        .build();
+            //Zero Ring Trajectories
+            setTelemetryData("Status", "Building zero rings trajectories");
+            Trajectory startToPowershotPos = drive.trajectoryBuilder(new Pose2d(-62, -26, Math.toRadians(0)))
+                    .lineToLinearHeading(new Pose2d(-4, -24,0))
+                    .build();
 
-                Trajectory powershotPosToCenterPowershot = drive.trajectoryBuilder(startToPowershotPos.end())
-                        .lineToLinearHeading(new Pose2d(-10, -19, /*drive.headingFromPoints(72, -10,-10, -10)*/0))
-                        .build();
+            //Trajectory powerShotToWobbleZeroRing = drive.trajectoryBuilder(powershotPosToRightPowershot.end())
+            Trajectory powerShotToWobbleZeroRing = drive.trajectoryBuilder(startToPowershotPos.end())
+                    .lineToLinearHeading(new Pose2d(-4, -61, Math.toRadians(335)))
+                    .build();
 
-                Trajectory powershotPosToRightPowershot = drive.trajectoryBuilder(powershotPosToCenterPowershot.end())
-                        .lineToLinearHeading(new Pose2d(-10, -27.5, /*drive.headingFromPoints(72, -10,-10, -10)*/0))
-                        .build();
+            Trajectory wobbleToWobble2ZeroRing = drive.trajectoryBuilder(new Pose2d(powerShotToWobbleZeroRing.end().getX(), -57, powerShotToWobbleZeroRing.end().getHeading()))
+                    .splineToSplineHeading(new Pose2d(-10, -58, 0), Math.toRadians(180))
+                    .splineToSplineHeading(new Pose2d(-31, -58, 0),  Math.toRadians(180),  new MinVelocityConstraint(
+                                    Arrays.asList(
+                                            new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
+                                            new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
+                                    )
+                            ),
+                            new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
+                    .build();
 
-                //Zero Ring Trajectories
-                setTelemetryData("Status", "Building zero rings trajectories");
-                //Trajectory powerShotToWobbleZeroRing = drive.trajectoryBuilder(powershotPosToRightPowershot.end())
-                Trajectory powerShotToWobbleZeroRing = drive.trajectoryBuilder(startToPowershotPos.end())
-                        .lineToLinearHeading(new Pose2d(-4, -61, Math.toRadians(335)))
-                        .build();
+            Trajectory dropWobble2ZeroRing = drive.trajectoryBuilder(wobbleToWobble2ZeroRing.end())
+                    .lineToLinearHeading(new Pose2d(-9, -59, Math.toRadians(315)))
+                    .build();
 
-                Trajectory wobbleToWobble2ZeroRing = drive.trajectoryBuilder(new Pose2d(powerShotToWobbleZeroRing.end().getX(), -57, powerShotToWobbleZeroRing.end().getHeading()))
-                        .splineToSplineHeading(new Pose2d(-10, -58, 0), Math.toRadians(180))
-                        .splineToSplineHeading(new Pose2d(-31, -58, 0),  Math.toRadians(180),  new MinVelocityConstraint(
-                                        Arrays.asList(
-                                                new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
-                                                new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
-                                        )
-                                ),
-                                new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
-                        .build();
+            Trajectory pickUpRingsZeroRings = drive.trajectoryBuilder(dropWobble2ZeroRing.end())
+                    .splineToConstantHeading(new Vector2d(-14, -50), Math.toRadians(90))
+                    .addDisplacementMarker(() -> {
+                        lowerBackplate();
+                        runIntakeForward();
+                    })
+                    .splineToSplineHeading(new Pose2d(0, -12, Math.toRadians(0)), Math.toRadians(0))
+                    .splineToSplineHeading(new Pose2d(50, -12, 0), 0)
+                    .addDisplacementMarker(() -> {setShooterRPM(3650);})
+                    .splineToSplineHeading(new Pose2d(-4, -24, Math.toRadians(345)), 0)
+                    .addDisplacementMarker(() -> {
+                        liftBackplate(); stopIntake();
+                    })
+                    .build();
 
-                Trajectory dropWobble2ZeroRing = drive.trajectoryBuilder(wobbleToWobble2ZeroRing.end())
-                        .lineToLinearHeading(new Pose2d(-9, -59, Math.toRadians(315)))
-                        .build();
+            Trajectory park = drive.trajectoryBuilder(pickUpRingsZeroRings.end())
+                    .lineToLinearHeading(new Pose2d(9, -24, 0))
+                    .build();
 
-                Trajectory pickUpRingsZeroRings = drive.trajectoryBuilder(dropWobble2ZeroRing.end())
-                        .splineToConstantHeading(new Vector2d(-14, -50), Math.toRadians(90))
-                        .addDisplacementMarker(() -> {
-                            lowerBackplate();
-                            runIntakeForward();
-                        })
-                        .splineToSplineHeading(new Pose2d(0, -12, Math.toRadians(0)), Math.toRadians(0))
-                        .splineToSplineHeading(new Pose2d(50, -12, 0), 0)
-                        .addDisplacementMarker(() -> {setShooterRPM(3650);})
-                        .splineToSplineHeading(new Pose2d(-4, -24, Math.toRadians(345)), 0)
-                        .addDisplacementMarker(() -> {
-                            liftBackplate(); stopIntake();
-                        })
-                        .build();
+            //1 Ring Trajectories
+            setTelemetryData("Status", "Building one ring trajectories");
 
-                Trajectory park = drive.trajectoryBuilder(pickUpRingsZeroRings.end())
-                        .lineToLinearHeading(new Pose2d(9, -24, 0))
-                        .build();
+            Trajectory shootInitialOneRing = drive.trajectoryBuilder(new Pose2d(-62, -26, Math.toRadians(0)))
+                    .lineToConstantHeading(new Vector2d(-36, -38))
+                    .build();
 
-                //1 Ring Trajectories
-                setTelemetryData("Status", "Building one ring trajectories");
+            Trajectory pickUpOneRing = drive.trajectoryBuilder(shootInitialOneRing.end())
+                    .addDisplacementMarker(() -> {
+                        runIntakeForward();
+                        setShooterRPM(3200);
+                        lowerBackplate();
+                    })
+                    .splineToConstantHeading(new Vector2d(12, -36), 0,  new MinVelocityConstraint(
+                                    Arrays.asList(
+                                            new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
+                                            new MecanumVelocityConstraint(20, DriveConstants.TRACK_WIDTH)
+                                    )
+                            ),
+                            new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
+                    .splineToLinearHeading(new Pose2d(-4, -24, 0), Math.toRadians(90))
+                    .addDisplacementMarker(() -> {
+                        liftBackplate();
+                        stopIntake();
+                    })
+                    .build();
 
+            Trajectory wobbleOneRing = drive.trajectoryBuilder(pickUpOneRing.end())
+                    .lineToLinearHeading(new Pose2d(24, -52, Math.toRadians(0)))
+                    .build();
 
-
-                Trajectory shootInitialOneRing = drive.trajectoryBuilder(new Pose2d(-62, -26, Math.toRadians(0)))
-                        .lineToConstantHeading(new Vector2d(-36, -38))
-                        .build();
-
-                Trajectory pickUpOneRing = drive.trajectoryBuilder(shootInitialOneRing.end())
-                        .addDisplacementMarker(() -> {
-                            runIntakeForward();
-                            setShooterRPM(3190);
-                            lowerBackplate();
-                        })
-                        .lineToConstantHeading(new Vector2d(12, -36))
-                        .build();
-
-                Trajectory toPowershotRightLeftRing = drive.trajectoryBuilder(pickUpOneRing.end())
-                        .lineToConstantHeading(new Vector2d(-4, -24))
-                        .addDisplacementMarker(() -> {
-                            liftBackplate();
-                            stopIntake();
-                        })
-                        .build();
-
-                Trajectory wobbleOneRing = drive.trajectoryBuilder(toPowershotRightLeftRing.end())
-                        .lineToLinearHeading(new Pose2d(12, -54, Math.toRadians(0)))
-                        .build();
-
-                Trajectory goToWobble2OneRing = drive.trajectoryBuilder(wobbleOneRing.end())
-                        .splineToConstantHeading(new Vector2d(0, -40), Math.toRadians(180))
-                        .splineToLinearHeading(new Pose2d(-10, -58, 0), Math.toRadians(180))
-                        .splineToSplineHeading(new Pose2d(-31, -58, 0),  Math.toRadians(180),  new MinVelocityConstraint(
-                                        Arrays.asList(
-                                                new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
-                                                new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
-                                        )
-                                ),
-                                new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
-                        .build();
+            Trajectory goToWobble2OneRing = drive.trajectoryBuilder(wobbleOneRing.end())
+                    .splineToConstantHeading(new Vector2d(0, -40), Math.toRadians(180))
+                    .splineToLinearHeading(new Pose2d(-10, -56, 0), Math.toRadians(180))
+                    .splineToSplineHeading(new Pose2d(-31, -56, 0),  Math.toRadians(180),  new MinVelocityConstraint(
+                                    Arrays.asList(
+                                            new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
+                                            new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
+                                    )
+                            ),
+                            new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
+                    .build();
 
 
-                Trajectory dropWobble2OneRing = drive.trajectoryBuilder(goToWobble2OneRing.end())
-                        .addDisplacementMarker(() -> {
-                            lowerBackplate();
-                            setShooterRPM(0);
-                        })
-                        .lineToLinearHeading(new Pose2d(25, -23, 0))
-                        .build();
+            Trajectory dropWobble2OneRing = drive.trajectoryBuilder(goToWobble2OneRing.end())
+                    .addDisplacementMarker(() -> {
+                        lowerBackplate();
+                        setShooterRPM(0);
+                    })
+                    .lineToLinearHeading(new Pose2d(19, -52, 0))
+                    .build();
 
-                Trajectory pickUpRingsOneRing = drive.trajectoryBuilder(dropWobble2OneRing.end())
-                        .splineToConstantHeading(new Vector2d(-14, -50), Math.toRadians(90))
-                        .addDisplacementMarker(() -> {
-                            lowerBackplate();
-                            runIntakeForward();
-                        })
-                        .splineToSplineHeading(new Pose2d(0, -12, Math.toRadians(0)), Math.toRadians(0))
-                        .splineToSplineHeading(new Pose2d(50, -12, 0), 0)
-                        .addDisplacementMarker(() -> {setShooterRPM(3650);})
-                        .splineToSplineHeading(new Pose2d(-4, -24, Math.toRadians(345)), 0)
-                        .addDisplacementMarker(() -> {
-                            liftBackplate(); stopIntake();
-                        })
-                        .build();
+            Trajectory pickUpRingsOneRing = drive.trajectoryBuilder(dropWobble2OneRing.end())
+                    .splineToConstantHeading(new Vector2d(-14, -50), Math.toRadians(90))
+                    .addDisplacementMarker(() -> {
+                        lowerBackplate();
+                        runIntakeForward();
+                    })
+                    .splineToSplineHeading(new Pose2d(0, -12, Math.toRadians(0)), Math.toRadians(0))
+                    .splineToSplineHeading(new Pose2d(50, -12, 0), 0)
+                    .addDisplacementMarker(() -> {setShooterRPM(3650);})
+                    .splineToSplineHeading(new Pose2d(-4, -24, Math.toRadians(345)), 0)
+                    .addDisplacementMarker(() -> {
+                        liftBackplate(); stopIntake();
+                    })
+                    .build();
 
-                Trajectory parkOneRing = drive.trajectoryBuilder(pickUpRingsOneRing.end())
-                        .lineToConstantHeading(new Vector2d(9, -12))
-                        .build();
+            Trajectory parkOneRing = drive.trajectoryBuilder(pickUpRingsOneRing.end())
+                    .lineToLinearHeading(new Pose2d(6, -24, 0))
+                    .build();
 
-                //4 Ring Trajectories
-                setTelemetryData("Status", "Building four ring trajectories");
-                /*
-                Trajectory shootInitialFourRing = drive.trajectoryBuilder(new Pose2d(-62, -26, Math.toRadians(0)))
-                        .addDisplacementMarker(() -> {
-                            setShooterRPM(3770);
-                        })
-                        .lineToLinearHeading(new Pose2d(-40, -37, Math.toRadians(358)))
-                        .build();
+            //4 Ring Trajectories
+            setTelemetryData("Status", "Building four ring trajectories");
 
-                Trajectory pickUpTwoRingsFourRing = drive.trajectoryBuilder(shootInitialFourRing.end())
-                        .addDisplacementMarker(() -> {
-                            lowerBackplate();
-                            runIntakeForward();
-                            setShooterRPM(3685);
-                        })
-                        .lineToLinearHeading(new Pose2d(-25, -37, 0),  new MinVelocityConstraint(
-                                        Arrays.asList(
-                                                new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
-                                                new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
-                                        )
-                                ),
-                                new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
-                        .build();
+            Trajectory shootInitialFourRing = drive.trajectoryBuilder(new Pose2d(-62, -26, Math.toRadians(0)))
+                    .addDisplacementMarker(() -> {
+                        setShooterRPM(3770);
+                    })
+                    .lineToLinearHeading(new Pose2d(-40, -37, Math.toRadians(358)))
+                    .build();
 
-                Trajectory pickUpNextRingsFourRings = drive.trajectoryBuilder(pickUpTwoRingsFourRing.end())
-                        .addDisplacementMarker(() -> {lowerBackplate(); runIntakeForward();})
-                        .splineToConstantHeading(new Vector2d(-4, -37), 0, new MinVelocityConstraint(
-                                        Arrays.asList(
-                                                new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
-                                                new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
-                                        )
-                                ),
-                                new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
-                        .build();
+            Trajectory pickUpOneRingFourRings = drive.trajectoryBuilder(shootInitialFourRing.end())
+                    .addDisplacementMarker(() -> {
+                        lowerBackplate();
+                        runIntakeForward();
+                        setShooterRPM(3650);
+                    })
+                    .lineToLinearHeading(new Pose2d(-30, -37, 0),  new MinVelocityConstraint(
+                                    Arrays.asList(
+                                            new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
+                                            new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
+                                    )
+                            ),
+                            new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
+                    .build();
 
-                Trajectory deliverWobbleFourRing = drive.trajectoryBuilder(pickUpNextRingsFourRings.end())
-                        .lineToLinearHeading(new Pose2d(52, -50, Math.toRadians(135)), new MinVelocityConstraint(
-                                        Arrays.asList(
-                                                new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
-                                                new MecanumVelocityConstraint(62, DriveConstants.TRACK_WIDTH)
-                                        )
-                                ),
-                                new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
-                        .addDisplacementMarker(() -> {lowerBackplate();})
-                        .build();
+            Trajectory pickUpNextRingsFourRings = drive.trajectoryBuilder(pickUpOneRingFourRings.end())
+                    .addDisplacementMarker(() -> {lowerBackplate(); runIntakeForward(); setShooterRPM(3200);})
+                    .splineToSplineHeading(new Pose2d(-4, -37, 0), 0, new MinVelocityConstraint(
+                                    Arrays.asList(
+                                            new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
+                                            new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
+                                    )
+                            ),
+                            new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
+                    .splineToConstantHeading(new Vector2d(-4, -24), Math.toRadians(90))
+                    .addDisplacementMarker(() -> {
+                        liftUpRingKnocker();
+                    })
+                    .build();
 
-                Trajectory getAwayFromWobble2FourRing = drive.trajectoryBuilder(deliverWobbleFourRing.end())
-                        .lineToConstantHeading(new Vector2d(36, -36))
-                        .addDisplacementMarker(() -> { grabWobble(); })
-                        .build();
+            Trajectory deliverWobbleFourRing = drive.trajectoryBuilder(pickUpNextRingsFourRings.end())
+                    .lineToLinearHeading(new Pose2d(42, -60, Math.toRadians(345)), new MinVelocityConstraint(
+                                    Arrays.asList(
+                                            new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
+                                            new MecanumVelocityConstraint(62, DriveConstants.TRACK_WIDTH)
+                                    )
+                            ),
+                            new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
+                    .addDisplacementMarker(() -> {lowerBackplate();})
+                    .build();
 
-                Trajectory wobbleToWobble2FourRing = drive.trajectoryBuilder(deliverWobbleFourRing.end())
-                        .addDisplacementMarker(() -> {runIntakeForward();})
-                        .splineToConstantHeading(new Vector2d(36, -36), 0)
-                        .addSpatialMarker(new Vector2d(-12, -36), () -> {putWobbleLifterDown();})
-                        .splineToSplineHeading(new Pose2d(-22, -46, Math.toRadians(270)), 0, new MinVelocityConstraint(
-                                        Arrays.asList(
-                                                new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
-                                                new MecanumVelocityConstraint(62, DriveConstants.TRACK_WIDTH)
-                                        )
-                                ),
-                                new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
-                        .addDisplacementMarker(() -> {stopIntake();})
-                        .build();
+            Trajectory wobbleToWobble2FourRing = drive.trajectoryBuilder(new Pose2d(deliverWobbleFourRing.end().getX()-10, deliverWobbleFourRing.end().getY(), deliverWobbleFourRing.end().getHeading()))
+                    .splineToSplineHeading(new Pose2d(-10, -56, 0), Math.toRadians(180))
+                    .splineToSplineHeading(new Pose2d(-31, -56, 0),  Math.toRadians(180),  new MinVelocityConstraint(
+                                    Arrays.asList(
+                                            new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
+                                            new MecanumVelocityConstraint(10, DriveConstants.TRACK_WIDTH)
+                                    )
+                            ),
+                            new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
+                    .build();
 
-                Trajectory wobblePart2FourRing = drive.trajectoryBuilder(wobbleToWobble2FourRing.end())
-                        .lineToConstantHeading(new Vector2d(-40, -46),  new MinVelocityConstraint(
-                                        Arrays.asList(
-                                                new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
-                                                new MecanumVelocityConstraint(12, DriveConstants.TRACK_WIDTH)
-                                        )
-                                ),
-                                new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
-                        .build();
+            Trajectory deliverWobble2FourRing = drive.trajectoryBuilder(wobbleToWobble2FourRing.end())
+                .lineToLinearHeading(new Pose2d(42, -58, Math.toRadians(315)))
+                .build();
 
-                    Trajectory deliverWobble2FourRing = drive.trajectoryBuilder(new Pose2d(wobblePart2FourRing.end().getX(), wobblePart2FourRing.end().getY()+10, wobblePart2FourRing.end().getHeading()))
-                        .splineToSplineHeading(new Pose2d(0, -42, 0), 0, new MinVelocityConstraint(
-                                        Arrays.asList(
-                                                new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
-                                                new MecanumVelocityConstraint(62, DriveConstants.TRACK_WIDTH)
-                                        )
-                                ),
-                                new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
-                        .splineToSplineHeading(new Pose2d(51, -43, 0), 0, new MinVelocityConstraint(
-                                Arrays.asList(
-                                        new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
-                                        new MecanumVelocityConstraint(62, DriveConstants.TRACK_WIDTH)
-                                )
-                        ),
-                        new ProfileAccelerationConstraint(DriveConstants.MAX_ACCEL))
-                        .build();
+            Trajectory park4Ring = drive.trajectoryBuilder(deliverWobble2FourRing.end())
+                .lineToLinearHeading(new Pose2d(6, -24, 0))
+                .build();
 
-                 */
+            //Webcam initialization
+            int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
 
+            int[] viewportContainerIds = OpenCvCameraFactory.getInstance()
+                    .splitLayoutForMultipleViewports(
+                            cameraMonitorViewId, //The container we're splitting
+                            2, //The number of sub-containers to create
+                            OpenCvCameraFactory.ViewportSplitMethod.VERTICALLY); //Whether to split the container vertically or horizontally
 
-                //Webcam initialization
-                int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+            topcam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "goal_webcam"), viewportContainerIds[0]);
+            bottomCam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "webcam"), viewportContainerIds[1]);
+            ringPipeline = new SkystoneDeterminationPipeline();
+            powershotPipeline = new CustomPowershotPipelineRed(60, 0, 0);
 
-                int[] viewportContainerIds = OpenCvCameraFactory.getInstance()
-                        .splitLayoutForMultipleViewports(
-                                cameraMonitorViewId, //The container we're splitting
-                                2, //The number of sub-containers to create
-                                OpenCvCameraFactory.ViewportSplitMethod.VERTICALLY); //Whether to split the container vertically or horizontally
+            bottomCam.setPipeline(ringPipeline);
+            topcam.setPipeline(powershotPipeline);
 
-                topcam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "goal_webcam"), viewportContainerIds[0]);
-                bottomCam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "webcam"), viewportContainerIds[1]);
-                ringPipeline = new SkystoneDeterminationPipeline();
-                powershotPipeline = new CustomPowershotPipelineRed(60, 0, 0);
-
-                bottomCam.setPipeline(ringPipeline);
-                topcam.setPipeline(powershotPipeline);
-
-                bottomCam.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener()
+            bottomCam.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener()
+            {
+                @Override
+                public void onOpened()
                 {
-                    @Override
-                    public void onOpened()
-                    {
-                        bottomCam.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);
-                    }
-                });
-                topcam.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener()
-                {
-                    @Override
-                    public void onOpened()
-                    {
-                        topcam.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);
-                    }
-                });
-
-                telemetry.addData("Status", "Waiting for start");
-                telemetry.addData("Status", "Change acutally worked");
-                telemetry.update();
-
-                while(!opModeIsActive() && !isStopRequested()) {
-                    if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
-                        lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.RED);
-                        lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.RED);
-                    }else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
-                        lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
-                        lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
-                    }else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.FOUR) {
-                        lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
-                        lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
-                    }
-
-                    sleep(50);
+                    bottomCam.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);
                 }
+            });
+            topcam.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener()
+            {
+                @Override
+                public void onOpened()
+                {
+                    topcam.startStreaming(320, 240, OpenCvCameraRotation.UPRIGHT);
+                }
+            });
 
-                waitForStart();
+            telemetry.addData("Status", "Waiting for start");
+            telemetry.update();
 
-                if (isStopRequested()) return;
-
-                ringKnocker.setPosition(1);
-                sleep(500);
-
-                telemetry.addData("Analysis", ringPipeline.getAnalysis());
-                telemetry.addData("Position", ringPipeline.position);
-                telemetry.update();
-
+            while(!opModeIsActive() && !isStopRequested()) {
                 if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
-                    //Zero Rings
-                    bottomCam.stopStreaming();
                     lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.RED);
                     lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.RED);
-                } else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
-                    //One Ring
-                    bottomCam.stopStreaming();
+                }else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
                     lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
                     lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
-                } else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.FOUR) {
-                    //Four Rings
-                    bottomCam.stopStreaming();
+                }else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.FOUR) {
                     lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
                     lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
                 }
 
-                if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
-                    setShooterRPM(3190);
-                    liftUpRingKnocker();
-                    drive.followTrajectory(startToPowershotPos);
-                    sleep(0);
-                    drive.turn(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.RIGHT))+rightShotOffset));
-                    Flick();
-                    drive.turn(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.CENTER))+centerShotOffset));
-                    Flick();
-                    drive.turn(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.LEFT))+leftShotOffset));
-                    Flick();
-                    setShooterRPM(0);
-                    topcam.stopStreaming();
-                    lowerBackplate();
-                    CustomFollowDrop(powerShotToWobbleZeroRing);
-                    DropWobble();
-                    followAsyncArm(wobbleToWobble2ZeroRing, BACK_OPEN, 0.5);
-                    turret.claw.setPosition(turret.clawClosed);
-                    sleep(500);
-                    CustomFollowDrop(dropWobble2ZeroRing);
-                    turret.claw.setPosition(turret.clawOpen);
-                    sleep(500);
+                sleep(50);
+            }
 
-                    //followAsyncArm(pickUpRingsZeroRings, STOWED, 0.5);
-                    RetractArm(pickUpRingsZeroRings);
-                    Flick();
-                    Flick();
-                    Flick();
-                    Flick();
-                    drive.followTrajectory(park);
-                } else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
-                    setShooterRPM(3770);
-                    liftUpRingKnocker();
-                    drive.followTrajectory(shootInitialOneRing);
-                    sleep(500);
-                    Flick();
-                    drive.followTrajectory(pickUpOneRing);
-                    drive.followTrajectory(toPowershotRightLeftRing);
-                    sleep(0);
-                    drive.turn(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.RIGHT))+rightShotOffset));
-                    Flick();
-                    drive.turn(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.CENTER))+centerShotOffset));
-                    Flick();
-                    drive.turn(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.LEFT))+leftShotOffset));
-                    Flick();
-                    setShooterRPM(0);
-                    topcam.stopStreaming();
-                    CustomFollowDrop(wobbleOneRing);
-                    DropWobble();
-                    followAsyncArm(goToWobble2OneRing, BACK_OPEN, 0.5);
-                    turret.claw.setPosition(turret.clawClosed);
-                    drive.followTrajectory(dropWobble2OneRing);
-                    turret.claw.setPosition(turret.clawOpen);
-                    sleep(500);
+            waitForStart();
 
-                    drive.followTrajectory(parkOneRing);
-                }/* else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.FOUR) {
-                    drive.followTrajectory(shootInitialFourRing);
-                    Flick();
-                    Flick();
-                    Flick();
-                    Flick();
-                    topcam.stopStreaming();
-                    drive.followTrajectory(pickUpTwoRingsFourRing);
-                    sleep(750);
-                    liftBackplate();
-                    stopIntake();
-                    sleep(500);
-                    Flick();
-                    Flick();
-                    setShooterRPM(3710);
-                    drive.followTrajectory(pickUpNextRingsFourRings);
-                    sleep(250);
-                    liftBackplate();
-                    liftUpRingKnocker();
-                    stopIntake();
-                    sleep(500);
-                    Flick();
-                    Flick();
-                    Flick();
-                    Flick();
-                    stopIntake();
-                    followAsyncArm(deliverWobbleFourRing, -0.45);
-                    releaseWobble();
-                    setShooterRPM(0);
-                    sleep(250);
-                    //drive.followTrajectory(getAwayFromWobble2FourRing);
-                    drive.followTrajectory(wobbleToWobble2FourRing);
-                    drive.followTrajectory(wobblePart2FourRing);
-                    liftWobble();
-                    sleep(250);
-                    drive.followTrajectory(deliverWobble2FourRing);
-                    putWobbleLifterDown();
-                    sleep(250);
-                    Pose2d poseEstimate = drive.getPoseEstimate();
-                    Trajectory parkTrajectory = drive.trajectoryBuilder(poseEstimate)
-                            .splineToConstantHeading(new Vector2d(poseEstimate.getX(), poseEstimate.getY() + 12), 0)
-                            .addDisplacementMarker(() -> {
-                                releaseWobble();
-                            })
-                            .addSpatialMarker(new Vector2d(24, -24), () -> {putWobbleLifterUp();})
-                            .splineToConstantHeading(new Vector2d(18, poseEstimate.getY() + 12), Math.toRadians(180))
-                            .build();
+            if (isStopRequested()) return;
 
-                    //drive.followTrajectory(parkTrajectory);
-                    followAsyncArm(parkTrajectory, -1);
-                }
-                */
+            ringKnocker.setPosition(1);
+            sleep(500);
 
+            telemetry.addData("Analysis", ringPipeline.getAnalysis());
+            telemetry.addData("Position", ringPipeline.position);
+            telemetry.update();
 
-                PoseStorage.currentPose = drive.getPoseEstimate();
+            if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
+                //Zero Rings
+                bottomCam.stopStreaming();
+                lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.RED);
+                lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.RED);
+            } else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
+                //One Ring
+                bottomCam.stopStreaming();
+                lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
+                lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.BLUE);
+            } else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.FOUR) {
+                //Four Rings
+                bottomCam.stopStreaming();
+                lights.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
+                lights2.setPattern(RevBlinkinLedDriver.BlinkinPattern.GREEN);
+            }
+
+            if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
+                setShooterRPM(3190);
+                liftUpRingKnocker();
+                drive.followTrajectory(startToPowershotPos);
+                sleep(0);
+                drive.turn(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.RIGHT))+rightShotOffset));
+                Flick();
+                drive.turn(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.CENTER))+centerShotOffset));
+                Flick();
+                drive.turn(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.LEFT))+leftShotOffset));
+                Flick();
+                setShooterRPM(0);
+                topcam.stopStreaming();
+                lowerBackplate();
+                CustomFollowDrop(powerShotToWobbleZeroRing);
+                DropWobble();
+                followAsyncArm(wobbleToWobble2ZeroRing, BACK_OPEN, 0.5);
+                turret.claw.setPosition(turret.clawClosed);
+                sleep(500);
+                CustomFollowDrop(dropWobble2ZeroRing);
+                turret.claw.setPosition(turret.clawOpen);
+                sleep(500);
+
+                RetractArm(pickUpRingsZeroRings);
+                Flick();
+                Flick();
+                Flick();
+                Flick();
+                drive.followTrajectory(park);
+            } else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.ONE) {
+                setShooterRPM(3750);
+                liftUpRingKnocker();
+                drive.followTrajectory(shootInitialOneRing);
+                sleep(500);
+                Flick();
+                drive.followTrajectory(pickUpOneRing);
+                sleep(0);
+                drive.turn(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.RIGHT))+rightShotOffset));
+                Flick();
+                drive.turn(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.CENTER))+centerShotOffset));
+                Flick();
+                drive.turn(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.LEFT))+leftShotOffset));
+                Flick();
+                setShooterRPM(0);
+                topcam.stopStreaming();
+                CustomFollowDrop(wobbleOneRing);
+                DropWobble();
+                followAsyncArm(goToWobble2OneRing, BACK_OPEN, 0.5);
+                turret.claw.setPosition(turret.clawClosed);
+                sleep(500);
+                CustomFollowDrop(dropWobble2OneRing);
+                turret.claw.setPosition(turret.clawOpen);
+                sleep(500);
+                RetractArm(parkOneRing);
+            }else if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.FOUR) {
+                drive.followTrajectory(shootInitialFourRing);
+                Flick();
+                Flick();
+                Flick();
+                Flick();
+                drive.followTrajectory(pickUpOneRingFourRings);
+                sleep(750);
+                liftBackplate();
+                stopIntake();
+                sleep(500);
+                Flick();
+                Flick();
+                setShooterRPM(3200);
+                drive.followTrajectory(pickUpNextRingsFourRings);
+                liftBackplate();
+                stopIntake();
+                sleep(500);
+                drive.turn(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.RIGHT))+rightShotOffset));
+                Flick();
+                drive.turn(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.CENTER))+centerShotOffset));
+                Flick();
+                drive.turn(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.LEFT))+leftShotOffset));
+                Flick();
+                CustomFollowDrop(deliverWobbleFourRing);
+                DropWobble();
+                setShooterRPM(0);
+                followAsyncArm(wobbleToWobble2FourRing, BACK_OPEN, 0.5);
+                turret.claw.setPosition(turret.clawClosed);
+                sleep(500);
+                CustomFollowDrop(deliverWobble2FourRing);
+                turret.claw.setPosition(turret.clawOpen);
+                sleep(500);
+
+                RetractArm(park4Ring);
+            }
+
+            PoseStorage.currentPose = drive.getPoseEstimate();
+
+            timer.reset();
+
+            while(opModeIsActive() && timer.seconds() < 2) {
+                turret.linearInCheck();
+                turret.rotaryForwardCheck();
+                turret.liftUpCheck();
+                sleep(10);
+            }
     }
 
     private void defineHardware() {
@@ -695,7 +649,7 @@ public class Auton extends LinearOpMode {
         /*
          * The core values which define the location and size of the sample regions
          */
-        static final Point REGION1_TOPLEFT_ANCHOR_POINT = new Point(75,115);
+        static final Point REGION1_TOPLEFT_ANCHOR_POINT = new Point(65,115);
 
         static final int REGION_WIDTH = 45;
         static final int REGION_HEIGHT = 55;
