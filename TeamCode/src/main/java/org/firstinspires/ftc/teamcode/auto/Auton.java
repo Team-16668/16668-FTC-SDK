@@ -153,7 +153,7 @@ public class Auton extends LinearOpMode {
             Trajectory pickUpOneRing = drive.trajectoryBuilder(shootInitialOneRing.end())
                     .addDisplacementMarker(() -> {
                         runIntakeForward();
-                        setShooterRPM(3200);
+                        setShooterRPM(3210);
                         lowerBackplate();
                     })
                     .splineToSplineHeading(new Pose2d(12, -36, 0), 0,  new MinVelocityConstraint(
@@ -245,7 +245,7 @@ public class Auton extends LinearOpMode {
                     .build();
 
             Trajectory pickUpNextRingsFourRings = drive.trajectoryBuilder(pickUpOneRingFourRings.end())
-                    .addDisplacementMarker(() -> {lowerBackplate(); runIntakeForward(); setShooterRPM(3200);})
+                    .addDisplacementMarker(() -> {lowerBackplate(); runIntakeForward(); setShooterRPM(3210);})
                     .splineToSplineHeading(new Pose2d(-4, -37, 0), 0, new MinVelocityConstraint(
                                     Arrays.asList(
                                             new AngularVelocityConstraint(DriveConstants.MAX_ANG_VEL),
@@ -371,7 +371,7 @@ public class Auton extends LinearOpMode {
             }
 
             if(ringPipeline.position == OpenCVWebcam.SkystoneDeterminationPipeline.RingPosition.NONE) {
-                setShooterRPM(3190);
+                setShooterRPM(3210);
                 liftUpRingKnocker();
                 drive.followTrajectory(startToPowershotPos);
                 sleep(0);
@@ -439,7 +439,7 @@ public class Auton extends LinearOpMode {
                 sleep(500);
                 Flick();
                 Flick();
-                setShooterRPM(3200);
+                setShooterRPM(3210);
                 drive.followTrajectory(pickUpNextRingsFourRings);
                 sleep(1000);
                 liftBackplate();

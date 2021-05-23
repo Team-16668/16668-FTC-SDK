@@ -124,7 +124,7 @@ public class NewGameTeleop extends LinearOpMode {
 
     //Logic for Shooter
     public static double normalTargetRPM = 3710;
-    public static double powerShotTargetRPM = 3190;
+    public static double powerShotTargetRPM = 3210;
     double shooterStartTime,
             shooterTargetRPM = normalTargetRPM;
     InterpLUT shooterLut;
@@ -607,6 +607,7 @@ public class NewGameTeleop extends LinearOpMode {
 
                     drive.turnAsync(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.RIGHT))+rightShotOffset));
                 } else if(currentPowerShot == Powershot.Right) {
+                    drive.turnAsync(Math.toRadians((-powershotPipeline.calculateYaw(CustomPowershotPipelineRed.Target.RIGHT))+rightShotOffset));
                 }
             }
         }
