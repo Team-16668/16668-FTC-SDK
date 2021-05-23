@@ -21,7 +21,7 @@ import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.teamcode.tools.OpenCVWebcam;
+import org.firstinspires.ftc.teamcode.vision.tests.OpenCVWebcam;
 import org.firstinspires.ftc.teamcode.roadrunner.PoseStorage;
 import org.firstinspires.ftc.teamcode.roadrunner.drive.DriveConstants;
 import org.firstinspires.ftc.teamcode.roadrunner.drive.SampleMecanumDrive;
