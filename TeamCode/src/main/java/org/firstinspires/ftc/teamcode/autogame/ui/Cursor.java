@@ -1,37 +1,37 @@
-package org.firstinspires.ftc.teamcode.ui;
+package org.firstinspires.ftc.teamcode.autogame.ui;
 
 public class Cursor {
-    private int x;
-    private int y;
+    private double x;
+    private double y;
 
     private double speed;
 
-
+    public double adjustedSpeed;
     /**
      * This is the cursor for the autonomous teleop that will move around the dashboard.
      * @param x X for start position of cursor
      * @param y Y for start position of cursor
      * @param speed Speed of the cursor. The controls can be inverted by making it negative
      */
-    public Cursor(int x, int y, double speed) {
+    public Cursor(double x, double y, double speed) {
         this.x = x;
         this.y = y;
         this.speed = speed;
     }
 
-    public int getX() {
+    public double getX() {
         return x;
     }
 
-    public int getY() {
+    public double getY() {
         return y;
     }
 
-    public void setX(int x) {
+    public void setX(double x) {
         this.x = x;
     }
 
-    public void setY(int y) {
+    public void setY(double y) {
         this.y = y;
     }
 
@@ -60,7 +60,7 @@ public class Cursor {
             speedMultiplier *= 2;
         }
 
-        double adjustedSpeed = this.speed * speedMultiplier;
+        adjustedSpeed = this.speed * speedMultiplier;
 
         if(up) {
             this.x += adjustedSpeed;
@@ -74,7 +74,17 @@ public class Cursor {
             this.y -= adjustedSpeed;
         }
 
-
+        if(this.y > 24) {
+            this.y = 24;
+        }
+        if(this.y < -72) {
+            this.y = -72;
+        }
+        if(this.x > 72) {
+            this.x = 72;
+        }
+        if(this.x < -72) {
+            this.x = -72;
+        }
     }
-
 }
